@@ -18,16 +18,26 @@ set(DOCTEST_INCLUDE_DIR ${source_dir}/doctest CACHE INTERNAL "Path to include fo
 
 
 enable_testing()
+
 add_executable(MidiParserTest main.test.cpp)
+
 target_sources(MidiParserTest
   PRIVATE
+    ${MIDI_PARSER_SOURCES}
     Scanner.test.cpp
+    Parser.test.cpp
 )
+
 target_compile_features(MidiParserTest PUBLIC cxx_std_23)
-target_include_directories(MidiParserTest PRIVATE ${DOCTEST_INCLUDE_DIR})
-target_link_libraries(MidiParserTest PRIVATE MidiParser)
-target_compile_definitions(MidiParserTest PRIVATE 
+
+target_include_directories(MidiParserTest
+  PRIVATE
+    ${DOCTEST_INCLUDE_DIR}
+    ${CMAKE_SOURCE_DIR}/src
+)
+
+target_compile_definitions(MidiParserTest PRIVATE
   MIDI_FILES_DIR="${CMAKE_SOURCE_DIR}/midi_examples")
 
-add_test(NAME MidiParserTest 
+add_test(NAME MidiParserTest
          COMMAND MidiParserTest --success true)
