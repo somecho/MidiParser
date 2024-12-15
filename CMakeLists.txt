@@ -16,6 +16,7 @@ set(MIDI_PARSER_HEADERS
   ${CMAKE_SOURCE_DIR}/src/Scanner.h
   ${CMAKE_SOURCE_DIR}/src/Parser.h
   ${CMAKE_SOURCE_DIR}/src/File.h
+  ${CMAKE_SOURCE_DIR}/src/HeaderChunk.h
 )
 
 
