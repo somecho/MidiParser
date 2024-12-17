@@ -46,6 +46,7 @@ public:
     EVENT_READ,
     TRACK_READ,
     MIDI_FOUND,
+    FINISHED,
   };
   enum class Event : uint8_t {
     TEXT = 0x01,
@@ -86,6 +87,8 @@ private:
   Scanner m_scanner;
   State m_state;
   State m_prevState;
+  Event m_prevEvent;
+  Event m_nextEvent;
   std::set<std::pair<State, Event>> m_stateEvents;
   std::set<Event> m_midiMessages;
   std::unordered_map<Event, State> m_metaHandlers;
@@ -95,8 +98,11 @@ private:
   uint8_t m_channelRegister;
   std::vector<uint8_t> m_bytesRegister;
   uint32_t m_variableLength;
+  uint16_t trackCount;
+  uint16_t numTracks;
 
   void setState(State state);
+  void setNextEvent(Event event);
   void onIdentifier();
   void onFixedLength();
   void onFileFormat();

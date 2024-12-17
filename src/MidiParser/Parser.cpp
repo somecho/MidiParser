@@ -10,7 +10,9 @@
 namespace MidiParser {
 
 Parser::Parser(const std::string &midiFilePath)
-    : m_scanner(midiFilePath), m_state(State::NEW), m_prevState(State::NEW) {
+    : m_scanner(midiFilePath), m_state(State::NEW), m_prevState(State::NEW),
+      m_prevEvent(Event::IDENTIFIER), m_nextEvent(Event::IDENTIFIER),
+      trackCount(0) {
   m_stateEvents = {
       {State::NEW, Event::IDENTIFIER},
       {State::HEADER_ID_FOUND, Event::FIXED_LENGTH},
@@ -75,7 +77,9 @@ void Parser::parse() {
     throw std::runtime_error(
         "Not in a fresh state. Parser has already been used.");
   }
-  processEvent(Event::IDENTIFIER);
+  while (m_state != State::FINISHED) {
+    processEvent(m_nextEvent);
+  }
 }
 
 void Parser::processEvent(Event event) {
@@ -94,9 +98,13 @@ void Parser::setState(State state) {
   m_state = state;
 }
 
+void Parser::setNextEvent(Event event) {
+  m_prevEvent = m_nextEvent;
+  m_nextEvent = event;
+}
+
 void Parser::onIdentifier() {
   auto identifier = m_scanner.scan<4>();
-
   if (std::equal(HeaderID.begin(), HeaderID.end(), identifier.begin())) {
     std::cout << "Midi Header Identifier Found" << std::endl;
     setState(State::HEADER_ID_FOUND);
@@ -106,7 +114,7 @@ void Parser::onIdentifier() {
   } else {
     throw std::runtime_error("Identifier is not MThd or MTrk");
   }
-  processEvent(Event::FIXED_LENGTH);
+  setNextEvent(Event::FIXED_LENGTH);
 }
 
 void Parser::onFixedLength() {
@@ -117,10 +125,10 @@ void Parser::onFixedLength() {
     if (length != 6) {
       throw std::runtime_error("The length of the header chunk must be 6.");
     }
-    processEvent(Event::FILE_FORMAT);
+    setNextEvent(Event::FILE_FORMAT);
   } else if (m_prevState == State::TRACK_ID_FOUND) {
     std::cout << "Track chunk length: " << length << std::endl;
-    processEvent(Event::VARIABLE_TIME);
+    setNextEvent(Event::VARIABLE_TIME);
   }
 }
 
@@ -128,21 +136,21 @@ void Parser::onFileFormat() {
   auto fileFormat = ntohs(m_scanner.scan<uint16_t>());
   std::cout << "Midi file format number: " << fileFormat << std::endl;
   setState(State::FILE_FORMAT_FOUND);
-  processEvent(Event::NUM_TRACKS);
+  setNextEvent(Event::NUM_TRACKS);
 }
 
 void Parser::onNumTracks() {
-  auto n = ntohs(m_scanner.scan<uint16_t>());
-  std::cout << "Number of tracks: " << n << std::endl;
+  numTracks = ntohs(m_scanner.scan<uint16_t>());
+  std::cout << "Number of tracks: " << numTracks << std::endl;
   setState(State::NUM_TRACKS_FOUND);
-  processEvent(Event::TICKS);
+  setNextEvent(Event::TICKS);
 }
 
 void Parser::onTicks() {
   auto ticks = ntohs(m_scanner.scan<int16_t>());
   std::cout << "Number of ticks: " << ticks << std::endl;
   setState(State::HEADER_CHUNK_READ);
-  processEvent(Event::IDENTIFIER);
+  setNextEvent(Event::IDENTIFIER);
 }
 
 void Parser::onVariableTime() {
@@ -166,23 +174,31 @@ void Parser::onVariableTime() {
     m_variableLength = variableTo32(m_bytesRegister);
     m_bytesRegister.clear();
     setState(State::VARIABLE_TIME_READ);
-    switch (m_eventRegister) {
-    case Event::TEXT:
-      processEvent(m_eventRegister);
-      break;
-    default:
-      processEvent(Event::VARIABLE_TIME);
-      break;
+    if (m_eventRegister == Event::TEXT) {
+      setNextEvent(m_eventRegister);
+    } else {
+      setNextEvent(Event::VARIABLE_TIME);
     }
+    return;
+    /* switch (m_eventRegister) { */
+    /* case Event::TEXT: */
+    /*   setNextEvent(m_eventRegister); */
+    /*   break; */
+    /* default: */
+    /*   setNextEvent(Event::VARIABLE_TIME); */
+    /*   break; */
+    /* } */
   } else if (m_state != State::VARIABLE_TIME_READ) {
     m_bytesRegister.emplace_back(byte);
     setState(State::READING_VARIABLE_TIME);
-    processEvent(Event::VARIABLE_TIME);
+    setNextEvent(Event::VARIABLE_TIME);
+    return;
   }
   if (isMeta) {
     std::cout << "Found meta event" << std::endl;
     setState(State::META_FOUND);
-    processEvent(Event::META_TYPE);
+    setNextEvent(Event::META_TYPE);
+    return;
   } else {
     // determine which midi event
     std::cout << "Found midi event" << std::endl;
@@ -193,9 +209,13 @@ void Parser::onVariableTime() {
     std::cout << std::format("Midi message: {:08B}", byte) << std::endl;
     setState(State::MIDI_FOUND);
     if (m_midiMessages.find(m_messageRegister) != m_midiMessages.end()) {
-      processEvent(m_messageRegister);
+      setNextEvent(m_messageRegister);
+      return;
+      /* setNextEvent(Event::META_TYPE); */
     } else {
       std::cout << "not implemented" << std::endl;
+      setState(State::FINISHED);
+      return;
     }
   }
 }
@@ -206,9 +226,10 @@ void Parser::onMetaType() {
   auto metaType = Event(typeByte);
   if (m_metaHandlers.find(metaType) == m_metaHandlers.end()) {
     std::cout << "Not yet implemented" << std::endl;
+    setState(State::FINISHED);
   } else {
     setState(m_metaHandlers[metaType]);
-    processEvent(metaType);
+    setNextEvent(metaType);
   }
 }
 
@@ -221,7 +242,7 @@ void Parser::onSetTempo() {
   auto tempo = variableTo32(buffer);
   std::cout << "Tempo: " << tempo << std::endl;
   setState(State::EVENT_READ);
-  processEvent(Event::VARIABLE_TIME);
+  setNextEvent(Event::VARIABLE_TIME);
 }
 
 void Parser::onTimeSignature() {
@@ -242,7 +263,7 @@ void Parser::onTimeSignature() {
   std::cout << std::format("32nds in a quarter: {}", quarterDivision)
             << std::endl;
   setState(State::EVENT_READ);
-  processEvent(Event::VARIABLE_TIME);
+  setNextEvent(Event::VARIABLE_TIME);
 }
 
 void Parser::onEndOfTrack() {
@@ -250,14 +271,20 @@ void Parser::onEndOfTrack() {
   if (length != 0) {
     throw std::runtime_error("Length of the end of track event must be 0.");
   }
+  trackCount += 1;
   setState(State::TRACK_READ);
-  processEvent(Event::IDENTIFIER);
+  setNextEvent(Event::IDENTIFIER);
+  if (trackCount >= numTracks) {
+    std::cout << "END OF MIDI FILE" << std::endl;
+    setState(State::FINISHED);
+    setNextEvent(Event::NO_OP);
+  }
 }
 
 void Parser::onText() {
   if (m_eventRegister != Event::TEXT) {
     m_eventRegister = Event::TEXT;
-    processEvent(Event::VARIABLE_TIME);
+    setNextEvent(Event::VARIABLE_TIME);
   } else {
     auto buffer = m_scanner.scan(m_variableLength);
     std::cout << "TEXT EVENT" << std::endl;
@@ -266,7 +293,7 @@ void Parser::onText() {
               << std::endl;
     setState(State::EVENT_READ);
     m_eventRegister = Event::NO_OP;
-    processEvent(Event::VARIABLE_TIME);
+    setNextEvent(Event::VARIABLE_TIME);
   }
 }
 
@@ -277,7 +304,7 @@ void Parser::onMIDIControlChange() {
                            controllerNumber, value)
             << std::endl;
   setState(State::EVENT_READ);
-  processEvent(Event::VARIABLE_TIME);
+  setNextEvent(Event::VARIABLE_TIME);
 }
 
 void Parser::onMIDINoteOn() {
@@ -286,14 +313,14 @@ void Parser::onMIDINoteOn() {
   std::cout << std::format("Note on: Note - {}, Velocity - {}", key, velocity)
             << std::endl;
   setState(State::EVENT_READ);
-  processEvent(Event::VARIABLE_TIME);
+  setNextEvent(Event::VARIABLE_TIME);
 }
 
 void Parser::onMIDIProgramChange() {
   uint8_t program = m_scanner.scan<uint8_t>();
   std::cout << std::format("Program change: {}", program) << std::endl;
   setState(State::EVENT_READ);
-  processEvent(Event::VARIABLE_TIME);
+  setNextEvent(Event::VARIABLE_TIME);
 }
 
 void Parser::onMIDINoteOff() {
@@ -302,7 +329,7 @@ void Parser::onMIDINoteOff() {
   std::cout << std::format("Note off: Note - {}, Velocity - {}", key, velocity)
             << std::endl;
   setState(State::EVENT_READ);
-  processEvent(Event::VARIABLE_TIME);
+  setNextEvent(Event::VARIABLE_TIME);
 }
 
 void Parser::onMIDIPitchBend() {
@@ -311,7 +338,7 @@ void Parser::onMIDIPitchBend() {
 
   std::cout << std::format("Pitchbend: {}", value) << std::endl;
   setState(State::EVENT_READ);
-  processEvent(Event::VARIABLE_TIME);
+  setNextEvent(Event::VARIABLE_TIME);
 }
 
 } // namespace MidiParser
