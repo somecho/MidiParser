@@ -45,9 +45,10 @@ public:
     END_OF_TRACK_FOUND,
     EVENT_READ,
     TRACK_READ,
+    MIDI_FOUND,
   };
   enum class Event : uint8_t {
-    TEXT_EVENT = 0x01,
+    TEXT = 0x01,
     SET_TEMPO = 0x51,
     TIME_SIGNATURE = 0x58,
     END_OF_TRACK = 0x2F,
@@ -58,7 +59,13 @@ public:
     TICKS,
     VARIABLE_TIME,
     META_TYPE,
-    NO_OP
+    NO_OP,
+    MIDI,
+    MIDI_NOTE_ON = 0b10010000,
+    MIDI_NOTE_OFF = 0b10000000,
+    MIDI_PROGRAM_CHANGE = 0b11000000,
+    MIDI_CONTROL_CHANGE = 0b10110000,
+    MIDI_PITCH_BEND = 0b11100000,
   };
 
   explicit Parser(const std::string &midiFilePath);
@@ -80,9 +87,12 @@ private:
   State m_state;
   State m_prevState;
   std::set<std::pair<State, Event>> m_stateEvents;
+  std::set<Event> m_midiMessages;
   std::unordered_map<Event, State> m_metaHandlers;
   std::unordered_map<Event, std::function<void()>> m_actions;
   Event m_eventRegister;
+  Event m_messageRegister;
+  uint8_t m_channelRegister;
   std::vector<uint8_t> m_bytesRegister;
   uint32_t m_variableLength;
 
@@ -97,7 +107,12 @@ private:
   void onSetTempo();
   void onTimeSignature();
   void onEndOfTrack();
-  void onTextEvent();
+  void onText();
+  void onMIDINoteOn();
+  void onMIDIControlChange();
+  void onMIDIProgramChange();
+  void onMIDINoteOff();
+  void onMIDIPitchBend();
 };
 
 } // namespace MidiParser

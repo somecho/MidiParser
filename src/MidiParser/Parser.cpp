@@ -28,10 +28,18 @@ Parser::Parser(const std::string &midiFilePath)
       {State::VARIABLE_TIME_READ, Event::VARIABLE_TIME},
       {State::END_OF_TRACK_FOUND, Event::END_OF_TRACK},
       {State::TRACK_READ, Event::IDENTIFIER},
-      {State::META_TEXT_EVENT_FOUND, Event::TEXT_EVENT},
+      {State::META_TEXT_EVENT_FOUND, Event::TEXT},
       {State::META_TEXT_EVENT_FOUND, Event::VARIABLE_TIME},
-      {State::VARIABLE_TIME_READ, Event::TEXT_EVENT},
+      {State::VARIABLE_TIME_READ, Event::TEXT},
+      {State::VARIABLE_TIME_READ, Event::MIDI},
+      {State::MIDI_FOUND, Event::MIDI_CONTROL_CHANGE},
+      {State::MIDI_FOUND, Event::MIDI_NOTE_ON},
+      {State::MIDI_FOUND, Event::MIDI_PROGRAM_CHANGE},
+      {State::MIDI_FOUND, Event::MIDI_NOTE_OFF},
+      {State::MIDI_FOUND, Event::VARIABLE_TIME},
+      {State::MIDI_FOUND, Event::MIDI_PITCH_BEND},
   };
+
   m_actions = {
       {Event::IDENTIFIER, [this]() { onIdentifier(); }},
       {Event::FIXED_LENGTH, [this]() { onFixedLength(); }},
@@ -43,14 +51,23 @@ Parser::Parser(const std::string &midiFilePath)
       {Event::SET_TEMPO, [this]() { onSetTempo(); }},
       {Event::TIME_SIGNATURE, [this]() { onTimeSignature(); }},
       {Event::END_OF_TRACK, [this]() { onEndOfTrack(); }},
-      {Event::TEXT_EVENT, [this]() { onTextEvent(); }},
+      {Event::TEXT, [this]() { onText(); }},
+      {Event::MIDI_CONTROL_CHANGE, [this]() { onMIDIControlChange(); }},
+      {Event::MIDI_NOTE_ON, [this]() { onMIDINoteOn(); }},
+      {Event::MIDI_PROGRAM_CHANGE, [this]() { onMIDIProgramChange(); }},
+      {Event::MIDI_NOTE_OFF, [this]() { onMIDINoteOff(); }},
+      {Event::MIDI_PITCH_BEND, [this]() { onMIDIPitchBend(); }},
   };
+
   m_metaHandlers = {
       {Event::SET_TEMPO, State::META_SET_TEMPO_FOUND},
       {Event::TIME_SIGNATURE, State::META_TIME_SIGNATURE_FOUND},
       {Event::END_OF_TRACK, State::END_OF_TRACK_FOUND},
-      {Event::TEXT_EVENT, State::META_TEXT_EVENT_FOUND},
+      {Event::TEXT, State::META_TEXT_EVENT_FOUND},
   };
+  m_midiMessages = {Event::MIDI_CONTROL_CHANGE, Event::MIDI_NOTE_ON,
+                    Event::MIDI_PROGRAM_CHANGE, Event::MIDI_NOTE_OFF,
+                    Event::MIDI_PITCH_BEND};
 }
 
 void Parser::parse() {
@@ -139,18 +156,18 @@ void Parser::onVariableTime() {
   }
   auto byte = m_scanner.scan<uint8_t>();
   bool isMeta = byte == 0xFF;
-  bool isSysex = byte == 0xF0 || byte == 0xF7;
   bool isLastByte = 0x00 <= byte && byte <= 0x7F; // Bytes where the MSB = 0
   std::cout << std::format("Found byte: {:02X}", byte) << std::endl;
 
   if (isLastByte) {
+    std::cout << "last byte" << std::endl;
     m_bytesRegister.emplace_back(byte);
     // do something with the full register then clear it
     m_variableLength = variableTo32(m_bytesRegister);
     m_bytesRegister.clear();
     setState(State::VARIABLE_TIME_READ);
     switch (m_eventRegister) {
-    case Event::TEXT_EVENT:
+    case Event::TEXT:
       processEvent(m_eventRegister);
       break;
     default:
@@ -166,6 +183,20 @@ void Parser::onVariableTime() {
     std::cout << "Found meta event" << std::endl;
     setState(State::META_FOUND);
     processEvent(Event::META_TYPE);
+  } else {
+    // determine which midi event
+    std::cout << "Found midi event" << std::endl;
+    uint8_t messageMask = 0b11110000;
+    uint8_t channelMask = 0b00001111;
+    m_messageRegister = static_cast<Event>(byte & messageMask);
+    m_channelRegister = byte & channelMask;
+    std::cout << std::format("Midi message: {:08B}", byte) << std::endl;
+    setState(State::MIDI_FOUND);
+    if (m_midiMessages.find(m_messageRegister) != m_midiMessages.end()) {
+      processEvent(m_messageRegister);
+    } else {
+      std::cout << "not implemented" << std::endl;
+    }
   }
 }
 
@@ -223,9 +254,9 @@ void Parser::onEndOfTrack() {
   processEvent(Event::IDENTIFIER);
 }
 
-void Parser::onTextEvent() {
-  if (m_eventRegister != Event::TEXT_EVENT) {
-    m_eventRegister = Event::TEXT_EVENT;
+void Parser::onText() {
+  if (m_eventRegister != Event::TEXT) {
+    m_eventRegister = Event::TEXT;
     processEvent(Event::VARIABLE_TIME);
   } else {
     auto buffer = m_scanner.scan(m_variableLength);
@@ -237,6 +268,50 @@ void Parser::onTextEvent() {
     m_eventRegister = Event::NO_OP;
     processEvent(Event::VARIABLE_TIME);
   }
+}
+
+void Parser::onMIDIControlChange() {
+  uint8_t controllerNumber = m_scanner.scan<uint8_t>();
+  uint8_t value = m_scanner.scan<uint8_t>();
+  std::cout << std::format("Control Change: Controller - {}, Value - {}",
+                           controllerNumber, value)
+            << std::endl;
+  setState(State::EVENT_READ);
+  processEvent(Event::VARIABLE_TIME);
+}
+
+void Parser::onMIDINoteOn() {
+  uint8_t key = m_scanner.scan<uint8_t>();
+  uint8_t velocity = m_scanner.scan<uint8_t>();
+  std::cout << std::format("Note on: Note - {}, Velocity - {}", key, velocity)
+            << std::endl;
+  setState(State::EVENT_READ);
+  processEvent(Event::VARIABLE_TIME);
+}
+
+void Parser::onMIDIProgramChange() {
+  uint8_t program = m_scanner.scan<uint8_t>();
+  std::cout << std::format("Program change: {}", program) << std::endl;
+  setState(State::EVENT_READ);
+  processEvent(Event::VARIABLE_TIME);
+}
+
+void Parser::onMIDINoteOff() {
+  uint8_t key = m_scanner.scan<uint8_t>();
+  uint8_t velocity = m_scanner.scan<uint8_t>();
+  std::cout << std::format("Note off: Note - {}, Velocity - {}", key, velocity)
+            << std::endl;
+  setState(State::EVENT_READ);
+  processEvent(Event::VARIABLE_TIME);
+}
+
+void Parser::onMIDIPitchBend() {
+  auto data = m_scanner.scan<2>();
+  uint8_t value = (data[0] << 7) + data[1];
+
+  std::cout << std::format("Pitchbend: {}", value) << std::endl;
+  setState(State::EVENT_READ);
+  processEvent(Event::VARIABLE_TIME);
 }
 
 } // namespace MidiParser
