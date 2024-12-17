@@ -25,6 +25,8 @@ Parser::Parser(const std::string &midiFilePath)
       {State::META_TIME_SIGNATURE_FOUND, Event::TIME_SIGNATURE},
       {State::EVENT_READ, Event::VARIABLE_TIME},
       {State::VARIABLE_TIME_READ, Event::VARIABLE_TIME},
+      {State::END_OF_TRACK_FOUND, Event::END_OF_TRACK},
+      {State::TRACK_READ, Event::IDENTIFIER},
   };
   m_actions = {
       {Event::IDENTIFIER, [this]() { onIdentifier(); }},
@@ -36,10 +38,12 @@ Parser::Parser(const std::string &midiFilePath)
       {Event::META_TYPE, [this]() { onMetaType(); }},
       {Event::SET_TEMPO, [this]() { onSetTempo(); }},
       {Event::TIME_SIGNATURE, [this]() { onTimeSignature(); }},
+      {Event::END_OF_TRACK, [this]() { onEndOfTrack(); }},
   };
   m_metaHandlers = {
       {Event::SET_TEMPO, State::META_SET_TEMPO_FOUND},
       {Event::TIME_SIGNATURE, State::META_TIME_SIGNATURE_FOUND},
+      {Event::END_OF_TRACK, State::END_OF_TRACK_FOUND},
   };
 }
 
@@ -193,6 +197,15 @@ void Parser::onTimeSignature() {
             << std::endl;
   setState(State::EVENT_READ);
   processEvent(Event::VARIABLE_TIME);
+}
+
+void Parser::onEndOfTrack() {
+  auto length = m_scanner.scan<uint8_t>();
+  if (length != 0) {
+    throw std::runtime_error("Length of the end of track event must be 0.");
+  }
+  setState(State::TRACK_READ);
+  processEvent(Event::IDENTIFIER);
 }
 
 } // namespace MidiParser

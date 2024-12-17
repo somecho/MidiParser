@@ -40,7 +40,10 @@ public:
     META_FOUND,
     META_SET_TEMPO_FOUND,
     META_TIME_SIGNATURE_FOUND,
-    EVENT_READ
+    END_OF_TRACK_FOUND,
+    EVENT_READ,
+    TRACK_READ,
+
   };
   enum class Event : uint8_t {
     IDENTIFIER,
@@ -51,7 +54,8 @@ public:
     VARIABLE_TIME,
     META_TYPE,
     SET_TEMPO = 0x51,
-    TIME_SIGNATURE = 0x58
+    TIME_SIGNATURE = 0x58,
+    END_OF_TRACK = 0x2F
   };
 
   explicit Parser(const std::string &midiFilePath);
@@ -88,6 +92,7 @@ private:
   void onMetaType();
   void onSetTempo();
   void onTimeSignature();
+  void onEndOfTrack();
 };
 
 } // namespace MidiParser
