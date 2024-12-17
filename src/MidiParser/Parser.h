@@ -6,6 +6,7 @@
 #include <functional>
 #include <netinet/in.h>
 #include <set>
+#include <span>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -40,12 +41,16 @@ public:
     META_FOUND,
     META_SET_TEMPO_FOUND,
     META_TIME_SIGNATURE_FOUND,
+    META_TEXT_EVENT_FOUND,
     END_OF_TRACK_FOUND,
     EVENT_READ,
     TRACK_READ,
-
   };
   enum class Event : uint8_t {
+    TEXT_EVENT = 0x01,
+    SET_TEMPO = 0x51,
+    TIME_SIGNATURE = 0x58,
+    END_OF_TRACK = 0x2F,
     IDENTIFIER,
     FIXED_LENGTH,
     FILE_FORMAT,
@@ -53,21 +58,18 @@ public:
     TICKS,
     VARIABLE_TIME,
     META_TYPE,
-    SET_TEMPO = 0x51,
-    TIME_SIGNATURE = 0x58,
-    END_OF_TRACK = 0x2F
+    NO_OP
   };
 
   explicit Parser(const std::string &midiFilePath);
   void parse();
   void processEvent(Event event);
 
-  template <size_t N>
-  static uint32_t variableTo32(const std::array<uint8_t, N> &buffer) {
+  static inline uint32_t variableTo32(std::span<uint8_t> buffer) {
     uint32_t value = 0;
-    for (size_t i = 0; i < N; ++i) {
+    for (size_t i = 0; i < buffer.size(); ++i) {
       auto byte = static_cast<uint32_t>(buffer[i]);
-      auto shiftVal = (N - 1 - i) * 8;
+      auto shiftVal = (buffer.size() - 1 - i) * 8;
       value |= byte << shiftVal;
     }
     return value;
@@ -80,7 +82,9 @@ private:
   std::set<std::pair<State, Event>> m_stateEvents;
   std::unordered_map<Event, State> m_metaHandlers;
   std::unordered_map<Event, std::function<void()>> m_actions;
+  Event m_eventRegister;
   std::vector<uint8_t> m_bytesRegister;
+  uint32_t m_variableLength;
 
   void setState(State state);
   void onIdentifier();
@@ -93,6 +97,7 @@ private:
   void onSetTempo();
   void onTimeSignature();
   void onEndOfTrack();
+  void onTextEvent();
 };
 
 } // namespace MidiParser

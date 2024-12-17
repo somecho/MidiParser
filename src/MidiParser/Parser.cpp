@@ -5,6 +5,7 @@
 #include <iostream>
 #include <netinet/in.h>
 #include <stdexcept>
+#include <string_view>
 
 namespace MidiParser {
 
@@ -27,6 +28,9 @@ Parser::Parser(const std::string &midiFilePath)
       {State::VARIABLE_TIME_READ, Event::VARIABLE_TIME},
       {State::END_OF_TRACK_FOUND, Event::END_OF_TRACK},
       {State::TRACK_READ, Event::IDENTIFIER},
+      {State::META_TEXT_EVENT_FOUND, Event::TEXT_EVENT},
+      {State::META_TEXT_EVENT_FOUND, Event::VARIABLE_TIME},
+      {State::VARIABLE_TIME_READ, Event::TEXT_EVENT},
   };
   m_actions = {
       {Event::IDENTIFIER, [this]() { onIdentifier(); }},
@@ -39,11 +43,13 @@ Parser::Parser(const std::string &midiFilePath)
       {Event::SET_TEMPO, [this]() { onSetTempo(); }},
       {Event::TIME_SIGNATURE, [this]() { onTimeSignature(); }},
       {Event::END_OF_TRACK, [this]() { onEndOfTrack(); }},
+      {Event::TEXT_EVENT, [this]() { onTextEvent(); }},
   };
   m_metaHandlers = {
       {Event::SET_TEMPO, State::META_SET_TEMPO_FOUND},
       {Event::TIME_SIGNATURE, State::META_TIME_SIGNATURE_FOUND},
       {Event::END_OF_TRACK, State::END_OF_TRACK_FOUND},
+      {Event::TEXT_EVENT, State::META_TEXT_EVENT_FOUND},
   };
 }
 
@@ -140,9 +146,17 @@ void Parser::onVariableTime() {
   if (isLastByte) {
     m_bytesRegister.emplace_back(byte);
     // do something with the full register then clear it
+    m_variableLength = variableTo32(m_bytesRegister);
     m_bytesRegister.clear();
     setState(State::VARIABLE_TIME_READ);
-    processEvent(Event::VARIABLE_TIME);
+    switch (m_eventRegister) {
+    case Event::TEXT_EVENT:
+      processEvent(m_eventRegister);
+      break;
+    default:
+      processEvent(Event::VARIABLE_TIME);
+      break;
+    }
   } else if (m_state != State::VARIABLE_TIME_READ) {
     m_bytesRegister.emplace_back(byte);
     setState(State::READING_VARIABLE_TIME);
@@ -172,7 +186,8 @@ void Parser::onSetTempo() {
   if (length != 3) {
     throw std::runtime_error("Length of the set tempo meta event must be 3.");
   }
-  auto tempo = variableTo32<3>(m_scanner.scan<3>());
+  auto buffer = m_scanner.scan<3>();
+  auto tempo = variableTo32(buffer);
   std::cout << "Tempo: " << tempo << std::endl;
   setState(State::EVENT_READ);
   processEvent(Event::VARIABLE_TIME);
@@ -206,6 +221,22 @@ void Parser::onEndOfTrack() {
   }
   setState(State::TRACK_READ);
   processEvent(Event::IDENTIFIER);
+}
+
+void Parser::onTextEvent() {
+  if (m_eventRegister != Event::TEXT_EVENT) {
+    m_eventRegister = Event::TEXT_EVENT;
+    processEvent(Event::VARIABLE_TIME);
+  } else {
+    auto buffer = m_scanner.scan(m_variableLength);
+    std::cout << "TEXT EVENT" << std::endl;
+    std::cout << std::string_view(reinterpret_cast<char *>(buffer.data()),
+                                  m_variableLength)
+              << std::endl;
+    setState(State::EVENT_READ);
+    m_eventRegister = Event::NO_OP;
+    processEvent(Event::VARIABLE_TIME);
+  }
 }
 
 } // namespace MidiParser

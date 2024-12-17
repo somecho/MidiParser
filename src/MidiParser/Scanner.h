@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <format>
 #include <fstream>
+#include <vector>
 
 namespace MidiParser {
 
@@ -37,6 +38,16 @@ public:
     };
     pos = f.tellg();
     return data;
+  }
+
+  std::vector<uint8_t> scan(size_t size) {
+    std::vector<uint8_t> buffer(size);
+    if (!f.read(reinterpret_cast<char *>(buffer.data()), size)) {
+      throw std::runtime_error(std::format("Failed to read from position {}",
+                                           static_cast<uint16_t>(pos)));
+    };
+    pos = f.tellg();
+    return buffer;
   }
 
   std::streampos getPos();
