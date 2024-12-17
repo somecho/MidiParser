@@ -5,7 +5,7 @@
 #include <format>
 #include <fstream>
 
-namespace Midi {
+namespace MidiParser {
 
 class Scanner {
 public:
@@ -17,7 +17,7 @@ public:
     length = f.tellg();
     f.seekg(0, std::ios::beg);
     pos = f.tellg();
-  };
+  }
 
   template <size_t N> std::array<uint8_t, N> scan() {
     std::array<uint8_t, N> buffer;
@@ -27,7 +27,7 @@ public:
     };
     pos = f.tellg();
     return buffer;
-  };
+  }
 
   template <typename T> T scan() {
     T data;
@@ -37,10 +37,18 @@ public:
     };
     pos = f.tellg();
     return data;
-  };
+  }
 
   std::streampos getPos();
+
   uint32_t getFileLength();
+
+  /// Advances the stream position by 1 byte.
+  void advance();
+
+  /// Views the byte at the current position without moving the stream position.
+  uint8_t peek();
+
   void seek(std::streampos position);
 
 private:
@@ -49,4 +57,4 @@ private:
   uint32_t length;
 };
 
-}; // namespace Midi
+} // namespace MidiParser

@@ -3,11 +3,19 @@
 #include <ios>
 #include <stdexcept>
 
-std::streampos Midi::Scanner::getPos() { return pos; }
+namespace MidiParser {
+std::streampos Scanner::getPos() { return pos; }
 
-uint32_t Midi::Scanner::getFileLength() { return length; }
+uint32_t Scanner::getFileLength() { return length; }
 
-void Midi::Scanner::seek(std::streampos position) {
+void Scanner::advance() {
+  f.ignore();
+  pos = f.tellg();
+}
+
+uint8_t Scanner::peek() { return f.peek(); }
+
+void Scanner::seek(std::streampos position) {
   if (position < 0) {
     throw std::runtime_error("Attempting to provide a negative position!");
   }
@@ -19,3 +27,5 @@ void Midi::Scanner::seek(std::streampos position) {
   f.seekg(position);
   pos = f.tellg();
 }
+
+} // namespace MidiParser

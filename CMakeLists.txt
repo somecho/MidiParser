@@ -7,18 +7,14 @@ add_library(MidiParser)
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
 set(MIDI_PARSER_SOURCES
-  ${CMAKE_SOURCE_DIR}/src/Scanner.cpp
-  ${CMAKE_SOURCE_DIR}/src/Parser.cpp
-  ${CMAKE_SOURCE_DIR}/src/File.cpp
+  ${CMAKE_SOURCE_DIR}/src/MidiParser/Parser.cpp
+  ${CMAKE_SOURCE_DIR}/src/MidiParser/Scanner.cpp
 )
 
 set(MIDI_PARSER_HEADERS
-  ${CMAKE_SOURCE_DIR}/src/Scanner.h
-  ${CMAKE_SOURCE_DIR}/src/Parser.h
-  ${CMAKE_SOURCE_DIR}/src/File.h
-  ${CMAKE_SOURCE_DIR}/src/HeaderChunk.h
+  ${CMAKE_SOURCE_DIR}/src/MidiParser/Parser.h
+  ${CMAKE_SOURCE_DIR}/src/MidiParser/Scanner.h
 )
-
 
 target_sources(MidiParser
   PRIVATE
@@ -37,7 +33,10 @@ target_include_directories(MidiParser
 
 target_compile_features(MidiParser PUBLIC cxx_std_23)
 
+# Set flags for Debug build
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -Wall -Wpedantic")
+
+# Set flags for Release build
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG -s -Wall -Wpedantic")
+
 add_subdirectory(tests)
-
-
-

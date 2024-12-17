@@ -17,7 +17,11 @@ struct TrackBase {
 };
 
 struct Meta : TrackBase {
-  enum class Type : uint32_t { TEXT = 0x01, SET_TEMPO = 0x51 };
+  enum class Type : uint32_t {
+    TEXT = 0x01,
+    SET_TEMPO = 0x51,
+    END_OF_TRACK = 0x2F
+  };
   /// Variable Type
   uint32_t length;
 };
