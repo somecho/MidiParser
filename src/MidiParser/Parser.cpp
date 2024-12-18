@@ -53,6 +53,8 @@ void Parser::setNextEvent(Event event) {
   m_nextEvent = event;
 }
 
+State Parser::getState() const { return m_state; }
+
 void Parser::onIdentifier() {
   auto identifier = m_scanner.scan<4>();
   if (std::equal(HeaderID.begin(), HeaderID.end(), identifier.begin())) {

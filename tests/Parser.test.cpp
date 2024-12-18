@@ -13,4 +13,5 @@ TEST(Parser, OpeningInvalidFile) {
 TEST(Parser, Parse) {
   auto parser = MidiParser::Parser(std::string(EXAMPLES_DIR) + "/queen.mid");
   parser.parse();
+  EXPECT_EQ(parser.getState(), MidiParser::State::FINISHED);
 }

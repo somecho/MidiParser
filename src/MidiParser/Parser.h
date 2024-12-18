@@ -33,6 +33,7 @@ class Parser {
 
   void parse();
   void processEvent(Event event);
+  State getState() const;
 
   static inline uint32_t variableTo32(std::span<uint8_t> buffer) {
     uint32_t value = 0;
@@ -43,6 +44,7 @@ class Parser {
     }
     return value;
   }
+
 
  private:
   Event m_eventRegister;
@@ -64,6 +66,7 @@ class Parser {
 
   void setState(State state);
   void setNextEvent(Event event);
+
   void onIdentifier();
   void onFixedLength();
   void onFileFormat();
