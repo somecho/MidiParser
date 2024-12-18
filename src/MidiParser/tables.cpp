@@ -31,4 +31,15 @@ const std::set<std::pair<State, Event>> StateEvents{
     {State::MIDI_FOUND, Event::MIDI_PITCH_BEND},
 };
 
-}
+const std::unordered_map<Event, State> MetaHandlers{
+    {Event::SET_TEMPO, State::META_SET_TEMPO_FOUND},
+    {Event::TIME_SIGNATURE, State::META_TIME_SIGNATURE_FOUND},
+    {Event::END_OF_TRACK, State::END_OF_TRACK_FOUND},
+    {Event::TEXT, State::META_TEXT_EVENT_FOUND},
+};
+
+const std::set<Event> MidiMessages{
+    Event::MIDI_CONTROL_CHANGE, Event::MIDI_NOTE_ON, Event::MIDI_PROGRAM_CHANGE,
+    Event::MIDI_NOTE_OFF, Event::MIDI_PITCH_BEND};
+
+}  // namespace MidiParser

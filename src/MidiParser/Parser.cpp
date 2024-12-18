@@ -35,16 +35,6 @@ Parser::Parser(const std::string &midiFilePath)
       {Event::MIDI_NOTE_OFF, [this]() { onMIDINoteOff(); }},
       {Event::MIDI_PITCH_BEND, [this]() { onMIDIPitchBend(); }},
   };
-
-  m_metaHandlers = {
-      {Event::SET_TEMPO, State::META_SET_TEMPO_FOUND},
-      {Event::TIME_SIGNATURE, State::META_TIME_SIGNATURE_FOUND},
-      {Event::END_OF_TRACK, State::END_OF_TRACK_FOUND},
-      {Event::TEXT, State::META_TEXT_EVENT_FOUND},
-  };
-  m_midiMessages = {Event::MIDI_CONTROL_CHANGE, Event::MIDI_NOTE_ON,
-                    Event::MIDI_PROGRAM_CHANGE, Event::MIDI_NOTE_OFF,
-                    Event::MIDI_PITCH_BEND};
 }
 
 void Parser::parse() {
@@ -183,7 +173,7 @@ void Parser::onVariableTime() {
     m_channelRegister = byte & channelMask;
     std::cout << std::format("Midi message: {:08B}", byte) << std::endl;
     setState(State::MIDI_FOUND);
-    if (m_midiMessages.find(m_messageRegister) != m_midiMessages.end()) {
+    if (MidiMessages.find(m_messageRegister) != MidiMessages.end()) {
       setNextEvent(m_messageRegister);
       return;
       /* setNextEvent(Event::META_TYPE); */
@@ -199,11 +189,11 @@ void Parser::onMetaType() {
   auto typeByte = m_scanner.scan<uint8_t>();
   std::cout << std::format("Found byte: {:02X}", typeByte) << std::endl;
   auto metaType = Event(typeByte);
-  if (m_metaHandlers.find(metaType) == m_metaHandlers.end()) {
+  if (MetaHandlers.find(metaType) == MetaHandlers.end()) {
     std::cout << "Not yet implemented" << std::endl;
     setState(State::FINISHED);
   } else {
-    setState(m_metaHandlers[metaType]);
+    setState(MetaHandlers.at(metaType));
     setNextEvent(metaType);
   }
 }

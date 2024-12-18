@@ -20,13 +20,6 @@
 
 namespace MidiParser {
 
-struct pairHash {
-  template <typename T1, typename T2>
-  std::size_t operator()(const std::pair<T1, T2> &pair) const {
-    return std::hash<T1>()(pair.first) ^ std::hash<T2>()(pair.second);
-  }
-};
-
 inline std::array<uint8_t, 4> HeaderID{/*M*/ 0x4D, /*T*/ 0x54,
                                        /*h*/ 0x68, /*d*/ 0x64};
 
@@ -56,8 +49,6 @@ class Parser {
   State m_prevState;
   Event m_prevEvent;
   Event m_nextEvent;
-  std::set<Event> m_midiMessages;
-  std::unordered_map<Event, State> m_metaHandlers;
   std::unordered_map<Event, std::function<void()>> m_actions;
   Event m_eventRegister;
   Event m_messageRegister;
