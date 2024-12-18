@@ -76,10 +76,12 @@ class Parser {
   void onTimeSignature();
   void onEndOfTrack();
   void onText();
+  void onMIDINoteOff();
   void onMIDINoteOn();
+  void onMIDIPolyAftertouch();
   void onMIDIControlChange();
   void onMIDIProgramChange();
-  void onMIDINoteOff();
+  void onMIDIAftertouch();
   void onMIDIPitchBend();
 
   friend std::unordered_map<Event, std::function<void()>> bindActions(

@@ -39,8 +39,11 @@ const std::unordered_map<Event, State> MetaHandlers{
 };
 
 const std::set<Event> MidiMessages{
-    Event::MIDI_CONTROL_CHANGE, Event::MIDI_NOTE_ON, Event::MIDI_PROGRAM_CHANGE,
-    Event::MIDI_NOTE_OFF, Event::MIDI_PITCH_BEND};
+    Event::MIDI_NOTE_OFF,        Event::MIDI_NOTE_ON,
+    Event::MIDI_POLY_AFTERTOUCH, Event::MIDI_CONTROL_CHANGE,
+    Event::MIDI_PROGRAM_CHANGE,  Event::MIDI_AFTERTOUCH,
+    Event::MIDI_PITCH_BEND,
+};
 
 std::unordered_map<Event, std::function<void()>> bindActions(Parser& parser) {
   return {
@@ -55,12 +58,15 @@ std::unordered_map<Event, std::function<void()>> bindActions(Parser& parser) {
       {Event::TIME_SIGNATURE, [&parser]() { parser.onTimeSignature(); }},
       {Event::END_OF_TRACK, [&parser]() { parser.onEndOfTrack(); }},
       {Event::TEXT, [&parser]() { parser.onText(); }},
-      {Event::MIDI_NOTE_ON, [&parser]() { parser.onMIDINoteOn(); }},
       {Event::MIDI_NOTE_OFF, [&parser]() { parser.onMIDINoteOff(); }},
-      {Event::MIDI_PROGRAM_CHANGE,
-       [&parser]() { parser.onMIDIProgramChange(); }},
+      {Event::MIDI_NOTE_ON, [&parser]() { parser.onMIDINoteOn(); }},
+      {Event::MIDI_POLY_AFTERTOUCH,
+       [&parser]() { parser.onMIDIPolyAftertouch(); }},
       {Event::MIDI_CONTROL_CHANGE,
        [&parser]() { parser.onMIDIControlChange(); }},
+      {Event::MIDI_PROGRAM_CHANGE,
+       [&parser]() { parser.onMIDIProgramChange(); }},
+      {Event::MIDI_AFTERTOUCH, [&parser]() { parser.onMIDIAftertouch(); }},
       {Event::MIDI_PITCH_BEND, [&parser]() { parser.onMIDIPitchBend(); }},
   };
 }

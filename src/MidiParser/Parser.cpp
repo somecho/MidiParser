@@ -254,9 +254,25 @@ void Parser::onMIDINoteOn() {
   setNextEvent(Event::VARIABLE_TIME);
 }
 
+void Parser::onMIDIPolyAftertouch() {
+  uint8_t key = m_scanner.scan<uint8_t>();
+  uint8_t value = m_scanner.scan<uint8_t>();
+  std::cout << std::format("Poly aftertouch: Note - {}, value - {}", key, value)
+            << std::endl;
+  setState(State::EVENT_READ);
+  setNextEvent(Event::VARIABLE_TIME);
+}
+
 void Parser::onMIDIProgramChange() {
   uint8_t program = m_scanner.scan<uint8_t>();
   std::cout << std::format("Program change: {}", program) << std::endl;
+  setState(State::EVENT_READ);
+  setNextEvent(Event::VARIABLE_TIME);
+}
+
+void Parser::onMIDIAftertouch() {
+  uint8_t value = m_scanner.scan<uint8_t>();
+  std::cout << std::format("Aftertouch: value - {}", value) << std::endl;
   setState(State::EVENT_READ);
   setNextEvent(Event::VARIABLE_TIME);
 }
