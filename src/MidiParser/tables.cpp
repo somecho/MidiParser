@@ -42,4 +42,25 @@ const std::set<Event> MidiMessages{
     Event::MIDI_CONTROL_CHANGE, Event::MIDI_NOTE_ON, Event::MIDI_PROGRAM_CHANGE,
     Event::MIDI_NOTE_OFF, Event::MIDI_PITCH_BEND};
 
+std::unordered_map<Event, std::function<void()>> bindActions(Parser& parser) {
+  return {
+      {Event::IDENTIFIER, [&parser]() { parser.onIdentifier(); }},
+      {Event::FIXED_LENGTH, [&parser]() { parser.onFixedLength(); }},
+      {Event::FILE_FORMAT, [&parser]() { parser.onFileFormat(); }},
+      {Event::NUM_TRACKS, [&parser]() { parser.onNumTracks(); }},
+      {Event::TICKS, [&parser]() { parser.onTicks(); }},
+      {Event::VARIABLE_TIME, [&parser]() { parser.onVariableTime(); }},
+      {Event::META_TYPE, [&parser]() { parser.onMetaType(); }},
+      {Event::SET_TEMPO, [&parser]() { parser.onSetTempo(); }},
+      {Event::TIME_SIGNATURE, [&parser]() { parser.onTimeSignature(); }},
+      {Event::END_OF_TRACK, [&parser]() { parser.onEndOfTrack(); }},
+      {Event::TEXT, [&parser]() { parser.onText(); }},
+      {Event::MIDI_CONTROL_CHANGE, [&parser]() { parser.onMIDIControlChange(); }},
+      {Event::MIDI_NOTE_ON, [&parser]() { parser.onMIDINoteOn(); }},
+      {Event::MIDI_PROGRAM_CHANGE, [&parser]() { parser.onMIDIProgramChange(); }},
+      {Event::MIDI_NOTE_OFF, [&parser]() { parser.onMIDINoteOff(); }},
+      {Event::MIDI_PITCH_BEND, [&parser]() { parser.onMIDIPitchBend(); }},
+  };
+}
+
 }  // namespace MidiParser

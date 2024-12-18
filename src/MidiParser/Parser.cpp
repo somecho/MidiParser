@@ -6,36 +6,21 @@
 #include <stdexcept>
 #include <string_view>
 
-#include "tables.h"
-
 namespace MidiParser {
 
 Parser::Parser(const std::string &midiFilePath)
-    : m_scanner(midiFilePath),
+    : m_eventRegister(Event::NO_OP),
+      m_messageRegister(Event::NO_OP),
+      m_channelRegister(UINT8_MAX),
+      m_variableLength(UINT32_MAX),
+      m_trackCount(0),
+      m_numTracks(0),
       m_state(State::NEW),
       m_prevState(State::NEW),
       m_prevEvent(Event::IDENTIFIER),
       m_nextEvent(Event::IDENTIFIER),
-      m_trackCount(0) {
-  m_actions = {
-      {Event::IDENTIFIER, [this]() { onIdentifier(); }},
-      {Event::FIXED_LENGTH, [this]() { onFixedLength(); }},
-      {Event::FILE_FORMAT, [this]() { onFileFormat(); }},
-      {Event::NUM_TRACKS, [this]() { onNumTracks(); }},
-      {Event::TICKS, [this]() { onTicks(); }},
-      {Event::VARIABLE_TIME, [this]() { onVariableTime(); }},
-      {Event::META_TYPE, [this]() { onMetaType(); }},
-      {Event::SET_TEMPO, [this]() { onSetTempo(); }},
-      {Event::TIME_SIGNATURE, [this]() { onTimeSignature(); }},
-      {Event::END_OF_TRACK, [this]() { onEndOfTrack(); }},
-      {Event::TEXT, [this]() { onText(); }},
-      {Event::MIDI_CONTROL_CHANGE, [this]() { onMIDIControlChange(); }},
-      {Event::MIDI_NOTE_ON, [this]() { onMIDINoteOn(); }},
-      {Event::MIDI_PROGRAM_CHANGE, [this]() { onMIDIProgramChange(); }},
-      {Event::MIDI_NOTE_OFF, [this]() { onMIDINoteOff(); }},
-      {Event::MIDI_PITCH_BEND, [this]() { onMIDIPitchBend(); }},
-  };
-}
+      m_scanner(midiFilePath),
+      m_actions(bindActions(*this)) {}
 
 void Parser::parse() {
   if (m_state != State::NEW) {

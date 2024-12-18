@@ -17,6 +17,7 @@
 
 #include "Scanner.h"
 #include "enums.h"
+#include "tables.h"
 
 namespace MidiParser {
 
@@ -28,8 +29,8 @@ inline std::array<uint8_t, 4> TrackID{/*M*/ 0x4D, /*T*/ 0x54,
 
 class Parser {
  public:
+  explicit Parser(const std::string& midiFilePath);
 
-  explicit Parser(const std::string &midiFilePath);
   void parse();
   void processEvent(Event event);
 
@@ -44,19 +45,22 @@ class Parser {
   }
 
  private:
-  Scanner m_scanner;
-  State m_state;
-  State m_prevState;
-  Event m_prevEvent;
-  Event m_nextEvent;
-  std::unordered_map<Event, std::function<void()>> m_actions;
   Event m_eventRegister;
   Event m_messageRegister;
   uint8_t m_channelRegister;
   std::vector<uint8_t> m_bytesRegister;
+
   uint32_t m_variableLength;
   uint16_t m_trackCount;
   uint16_t m_numTracks;
+
+  State m_state;
+  State m_prevState;
+  Event m_prevEvent;
+  Event m_nextEvent;
+
+  Scanner m_scanner;
+  std::unordered_map<Event, std::function<void()>> m_actions;
 
   void setState(State state);
   void setNextEvent(Event event);
@@ -76,6 +80,9 @@ class Parser {
   void onMIDIProgramChange();
   void onMIDINoteOff();
   void onMIDIPitchBend();
+
+  friend std::unordered_map<Event, std::function<void()>> bindActions(
+      Parser& parser);
 };
 
 }  // namespace MidiParser
