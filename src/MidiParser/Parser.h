@@ -36,15 +36,13 @@ class Parser {
   State getState() const;
 
   static inline uint32_t variableTo32(std::span<uint8_t> buffer) {
-    uint32_t value = 0;
+    uint32_t u32 = 0;
     for (size_t i = 0; i < buffer.size(); ++i) {
-      auto byte = static_cast<uint32_t>(buffer[i]);
-      auto shiftVal = (buffer.size() - 1 - i) * 8;
-      value |= byte << shiftVal;
+      auto offset = (buffer.size() - 1 - i) * 8;
+      u32 |= static_cast<uint32_t>(buffer[i]) << offset;
     }
-    return value;
+    return u32;
   }
-
 
  private:
   Event m_eventRegister;
