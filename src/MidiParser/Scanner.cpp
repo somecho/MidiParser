@@ -14,28 +14,18 @@ namespace MidiParser {
   pos = f.tellg();
 }
 
+std::vector<uint8_t> Scanner::scan(size_t size) {
+  std::vector<uint8_t> buffer(size);
+  if (!f.read(reinterpret_cast<char*>(buffer.data()), size)) {
+    throw std::runtime_error(std::format("Failed to read from position {}",
+                                         static_cast<uint16_t>(pos)));
+  };
+  pos = f.tellg();
+  return buffer;
+}
+
 std::streampos Scanner::getPos() const { return pos; }
 
 uint32_t Scanner::getFileLength() const { return length; }
-
-void Scanner::advance() {
-  f.ignore();
-  pos = f.tellg();
-}
-
-uint8_t Scanner::peek() { return f.peek(); }
-
-void Scanner::seek(std::streampos position) {
-  if (position < 0) {
-    throw std::runtime_error("Attempting to provide a negative position!");
-  }
-  if (position >= static_cast<std::streampos>(length)) {
-    auto msg = std::format("Attempting to scan beyond the end. Pos: {}",
-                           static_cast<std::streamoff>(position + pos));
-    throw std::runtime_error(msg);
-  }
-  f.seekg(position);
-  pos = f.tellg();
-}
 
 }  // namespace MidiParser

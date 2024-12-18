@@ -34,27 +34,11 @@ class Scanner {
     return data;
   }
 
-  std::vector<uint8_t> scan(size_t size) {
-    std::vector<uint8_t> buffer(size);
-    if (!f.read(reinterpret_cast<char *>(buffer.data()), size)) {
-      throw std::runtime_error(std::format("Failed to read from position {}",
-                                           static_cast<uint16_t>(pos)));
-    };
-    pos = f.tellg();
-    return buffer;
-  }
+  std::vector<uint8_t> scan(size_t size);
 
   std::streampos getPos() const;
 
   uint32_t getFileLength() const;
-
-  /// Advances the stream position by 1 byte.
-  void advance();
-
-  /// Views the byte at the current position without moving the stream position.
-  uint8_t peek();
-
-  void seek(std::streampos position);
 
  private:
   std::ifstream f;
