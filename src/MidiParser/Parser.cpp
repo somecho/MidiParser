@@ -82,21 +82,18 @@ void Parser::onFixedLength() {
 
 void Parser::onFileFormat() {
   auto fileFormat = ntohs(m_scanner.scan<uint16_t>());
-  std::cout << "Midi file format number: " << fileFormat << std::endl;
   setState(State::FILE_FORMAT_FOUND);
   setNextEvent(Event::NUM_TRACKS);
 }
 
 void Parser::onNumTracks() {
   m_numTracks = ntohs(m_scanner.scan<uint16_t>());
-  std::cout << "Number of tracks: " << m_numTracks << std::endl;
   setState(State::NUM_TRACKS_FOUND);
   setNextEvent(Event::TICKS);
 }
 
 void Parser::onTicks() {
   auto ticks = ntohs(m_scanner.scan<int16_t>());
-  std::cout << "Number of ticks: " << ticks << std::endl;
   setState(State::HEADER_CHUNK_READ);
   setNextEvent(Event::IDENTIFIER);
 }
@@ -107,18 +104,18 @@ void Parser::onVariableTime() {
         "Trying to parse variable time but bytes register is not empty.");
   }
   if (m_bytesRegister.size() > 4) {
-    throw std::runtime_error(
-        "Error parsing variable time. Reading more than 4 bytes.");
+    throw std::runtime_error("End byte of variable time not found.");
   }
   auto byte = m_scanner.scan<uint8_t>();
   bool isMeta = byte == 0xFF;
+  bool isMidi = byte >= 0x80 && byte <= 0xEF;
   bool isLastByte = 0x00 <= byte && byte <= 0x7F;  // Bytes where the MSB = 0
+  bool shouldReadVariableTime =
+      m_state == State::EVENT_READ || m_state == State::READING_VARIABLE_TIME;
   std::cout << std::format("Found byte: {:02X}", byte) << std::endl;
 
   if (isLastByte) {
-    std::cout << "last byte" << std::endl;
     m_bytesRegister.emplace_back(byte);
-    // do something with the full register then clear it
     m_variableLength = variableTo32(m_bytesRegister);
     m_bytesRegister.clear();
     setState(State::VARIABLE_TIME_READ);
@@ -128,44 +125,37 @@ void Parser::onVariableTime() {
       setNextEvent(Event::VARIABLE_TIME);
     }
     return;
-    /* switch (m_eventRegister) { */
-    /* case Event::TEXT: */
-    /*   setNextEvent(m_eventRegister); */
-    /*   break; */
-    /* default: */
-    /*   setNextEvent(Event::VARIABLE_TIME); */
-    /*   break; */
-    /* } */
-  } else if (m_state != State::VARIABLE_TIME_READ) {
-    m_bytesRegister.emplace_back(byte);
-    setState(State::READING_VARIABLE_TIME);
-    setNextEvent(Event::VARIABLE_TIME);
-    return;
   }
-  if (isMeta) {
-    std::cout << "Found meta event" << std::endl;
+
+  if (isMeta && !shouldReadVariableTime) {
     setState(State::META_FOUND);
-    setNextEvent(Event::META_TYPE);
-    return;
-  } else {
-    // determine which midi event
+    return setNextEvent(Event::META_TYPE);
+  }
+
+  if (isMidi && !shouldReadVariableTime) {
     std::cout << "Found midi event" << std::endl;
-    uint8_t messageMask = 0b11110000;
-    uint8_t channelMask = 0b00001111;
+    static const uint8_t messageMask = 0b11110000;
+    static const uint8_t channelMask = 0b00001111;
     m_messageRegister = static_cast<Event>(byte & messageMask);
     m_channelRegister = byte & channelMask;
     std::cout << std::format("Midi message: {:08B}", byte) << std::endl;
     setState(State::MIDI_FOUND);
-    if (MidiMessages.find(m_messageRegister) != MidiMessages.end()) {
-      setNextEvent(m_messageRegister);
-      return;
-      /* setNextEvent(Event::META_TYPE); */
-    } else {
+    setNextEvent(m_messageRegister);
+    if (MidiMessages.find(m_messageRegister) == MidiMessages.end()) {
       std::cout << "not implemented" << std::endl;
       setState(State::FINISHED);
-      return;
     }
+    return;
   }
+
+  if (shouldReadVariableTime) {
+    m_bytesRegister.emplace_back(byte);
+    setState(State::READING_VARIABLE_TIME);
+    return setNextEvent(Event::VARIABLE_TIME);
+  }
+
+  throw std::runtime_error(
+      "Invalid parser state. Something is wrong reading variable time.");
 }
 
 void Parser::onMetaType() {
