@@ -22,7 +22,7 @@ target_include_directories(MidiParserTest
 
 target_compile_definitions(MidiParserTest
   PRIVATE
-    EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/midi_examples"
+    EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/data/midi_examples"
 )
 
 if(UNIX)
