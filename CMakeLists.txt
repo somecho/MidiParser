@@ -9,11 +9,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 set(MIDI_PARSER_SOURCES
   ${CMAKE_SOURCE_DIR}/src/MidiParser/Parser.cpp
   ${CMAKE_SOURCE_DIR}/src/MidiParser/Scanner.cpp
+  ${CMAKE_SOURCE_DIR}/src/MidiParser/tables.cpp
 )
 
 set(MIDI_PARSER_HEADERS
   ${CMAKE_SOURCE_DIR}/src/MidiParser/Parser.h
   ${CMAKE_SOURCE_DIR}/src/MidiParser/Scanner.h
+  ${CMAKE_SOURCE_DIR}/src/MidiParser/enums.h
+  ${CMAKE_SOURCE_DIR}/src/MidiParser/tables.h
 )
 
 target_sources(MidiParser

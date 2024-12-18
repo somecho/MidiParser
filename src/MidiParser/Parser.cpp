@@ -1,45 +1,22 @@
 #include "Parser.h"
+
 #include <cmath>
 #include <format>
 #include <iostream>
 #include <stdexcept>
 #include <string_view>
 
+#include "tables.h"
+
 namespace MidiParser {
 
 Parser::Parser(const std::string &midiFilePath)
-    : m_scanner(midiFilePath), m_state(State::NEW), m_prevState(State::NEW),
-      m_prevEvent(Event::IDENTIFIER), m_nextEvent(Event::IDENTIFIER),
+    : m_scanner(midiFilePath),
+      m_state(State::NEW),
+      m_prevState(State::NEW),
+      m_prevEvent(Event::IDENTIFIER),
+      m_nextEvent(Event::IDENTIFIER),
       m_trackCount(0) {
-  m_stateEvents = {
-      {State::NEW, Event::IDENTIFIER},
-      {State::HEADER_ID_FOUND, Event::FIXED_LENGTH},
-      {State::FIXED_LENGTH_FOUND, Event::FILE_FORMAT},
-      {State::FILE_FORMAT_FOUND, Event::NUM_TRACKS},
-      {State::NUM_TRACKS_FOUND, Event::TICKS},
-      {State::HEADER_CHUNK_READ, Event::IDENTIFIER},
-      {State::TRACK_ID_FOUND, Event::FIXED_LENGTH},
-      {State::FIXED_LENGTH_FOUND, Event::VARIABLE_TIME},
-      {State::READING_VARIABLE_TIME, Event::VARIABLE_TIME},
-      {State::META_FOUND, Event::META_TYPE},
-      {State::META_SET_TEMPO_FOUND, Event::SET_TEMPO},
-      {State::META_TIME_SIGNATURE_FOUND, Event::TIME_SIGNATURE},
-      {State::EVENT_READ, Event::VARIABLE_TIME},
-      {State::VARIABLE_TIME_READ, Event::VARIABLE_TIME},
-      {State::END_OF_TRACK_FOUND, Event::END_OF_TRACK},
-      {State::TRACK_READ, Event::IDENTIFIER},
-      {State::META_TEXT_EVENT_FOUND, Event::TEXT},
-      {State::META_TEXT_EVENT_FOUND, Event::VARIABLE_TIME},
-      {State::VARIABLE_TIME_READ, Event::TEXT},
-      {State::VARIABLE_TIME_READ, Event::MIDI},
-      {State::MIDI_FOUND, Event::MIDI_CONTROL_CHANGE},
-      {State::MIDI_FOUND, Event::MIDI_NOTE_ON},
-      {State::MIDI_FOUND, Event::MIDI_PROGRAM_CHANGE},
-      {State::MIDI_FOUND, Event::MIDI_NOTE_OFF},
-      {State::MIDI_FOUND, Event::VARIABLE_TIME},
-      {State::MIDI_FOUND, Event::MIDI_PITCH_BEND},
-  };
-
   m_actions = {
       {Event::IDENTIFIER, [this]() { onIdentifier(); }},
       {Event::FIXED_LENGTH, [this]() { onFixedLength(); }},
@@ -81,7 +58,7 @@ void Parser::parse() {
 }
 
 void Parser::processEvent(Event event) {
-  if (m_stateEvents.find({m_state, event}) == m_stateEvents.end()) {
+  if (StateEvents.find({m_state, event}) == StateEvents.end()) {
     throw std::runtime_error("Unable to process event given current state.");
   }
 
@@ -162,7 +139,7 @@ void Parser::onVariableTime() {
   }
   auto byte = m_scanner.scan<uint8_t>();
   bool isMeta = byte == 0xFF;
-  bool isLastByte = 0x00 <= byte && byte <= 0x7F; // Bytes where the MSB = 0
+  bool isLastByte = 0x00 <= byte && byte <= 0x7F;  // Bytes where the MSB = 0
   std::cout << std::format("Found byte: {:02X}", byte) << std::endl;
 
   if (isLastByte) {
@@ -339,4 +316,4 @@ void Parser::onMIDIPitchBend() {
   setNextEvent(Event::VARIABLE_TIME);
 }
 
-} // namespace MidiParser
+}  // namespace MidiParser
