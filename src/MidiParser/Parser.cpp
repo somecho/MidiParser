@@ -57,15 +57,15 @@ State Parser::getState() const { return m_state; }
 
 void Parser::onIdentifier() {
   auto identifier = m_scanner.scan<4>();
-  if (std::equal(HeaderID.begin(), HeaderID.end(), identifier.begin())) {
-    std::cout << "Midi Header Identifier Found" << std::endl;
-    setState(State::HEADER_ID_FOUND);
-  } else if (std::equal(TrackID.begin(), TrackID.end(), identifier.begin())) {
-    std::cout << "Midi Track Identifier Found" << std::endl;
-    setState(State::TRACK_ID_FOUND);
-  } else {
-    throw std::runtime_error("Identifier is not MThd or MTrk");
+  bool isHeaderID =
+      std::equal(HeaderID.begin(), HeaderID.end(), identifier.begin());
+  bool isTrackID =
+      std::equal(TrackID.begin(), TrackID.end(), identifier.begin());
+
+  if (!isHeaderID && !isTrackID) {
+    throw std::runtime_error("Identifier is neither MThd nor MTrk.");
   }
+  setState(isHeaderID ? State::HEADER_ID_FOUND : State::TRACK_ID_FOUND);
   setNextEvent(Event::FIXED_LENGTH);
 }
 
