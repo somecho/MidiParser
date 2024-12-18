@@ -1,15 +1,21 @@
 #pragma once
 
-#include "Scanner.h"
+#ifdef WIN32
+#include <winsock.h>
+#else
+#include <netinet/in.h>
+#endif
+
 #include <array>
 #include <cstdint>
 #include <functional>
-#include <netinet/in.h>
 #include <set>
 #include <span>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include "Scanner.h"
 
 namespace MidiParser {
 
@@ -27,7 +33,7 @@ inline std::array<uint8_t, 4> TrackID{/*M*/ 0x4D, /*T*/ 0x54,
                                       /*r*/ 0x72, /*k*/ 0x6B};
 
 class Parser {
-public:
+ public:
   enum class State {
     NEW,
     HEADER_ID_FOUND,
@@ -83,7 +89,7 @@ public:
     return value;
   }
 
-private:
+ private:
   Scanner m_scanner;
   State m_state;
   State m_prevState;
@@ -121,4 +127,4 @@ private:
   void onMIDIPitchBend();
 };
 
-} // namespace MidiParser
+}  // namespace MidiParser

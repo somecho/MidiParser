@@ -33,10 +33,9 @@ target_include_directories(MidiParser
 
 target_compile_features(MidiParser PUBLIC cxx_std_23)
 
-# Set flags for Debug build
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -Wall -Wpedantic")
+if(WIN32)
+target_link_libraries(MidiParser PRIVATE ws2_32)
+endif(WIN32)
 
-# Set flags for Release build
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG -s -Wall -Wpedantic")
 
 add_subdirectory(tests)

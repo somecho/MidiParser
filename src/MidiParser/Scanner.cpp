@@ -1,12 +1,22 @@
 #include "Scanner.h"
-#include <cstdint>
+
 #include <ios>
-#include <stdexcept>
 
 namespace MidiParser {
-std::streampos Scanner::getPos() { return pos; }
 
-uint32_t Scanner::getFileLength() { return length; }
+ Scanner::Scanner(const std::string& filePath) : f(filePath) {
+  if (!f) {
+    throw std::runtime_error(std::format("Failed to open file {}", filePath));
+  }
+  f.seekg(0, std::ios::end);
+  length = f.tellg();
+  f.seekg(0, std::ios::beg);
+  pos = f.tellg();
+}
+
+std::streampos Scanner::getPos() const { return pos; }
+
+uint32_t Scanner::getFileLength() const { return length; }
 
 void Scanner::advance() {
   f.ignore();
@@ -28,4 +38,4 @@ void Scanner::seek(std::streampos position) {
   pos = f.tellg();
 }
 
-} // namespace MidiParser
+}  // namespace MidiParser
