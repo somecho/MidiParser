@@ -104,8 +104,8 @@ class Parser {
   uint8_t m_channelRegister;
   std::vector<uint8_t> m_bytesRegister;
   uint32_t m_variableLength;
-  uint16_t trackCount;
-  uint16_t numTracks;
+  uint16_t m_trackCount;
+  uint16_t m_numTracks;
 
   void setState(State state);
   void setNextEvent(Event event);

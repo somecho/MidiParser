@@ -4,7 +4,7 @@
 
 namespace MidiParser {
 
- Scanner::Scanner(const std::string& filePath) : f(filePath) {
+ Scanner::Scanner(const std::string& filePath) : f(filePath, std::ios::binary) {
   if (!f) {
     throw std::runtime_error(std::format("Failed to open file {}", filePath));
   }

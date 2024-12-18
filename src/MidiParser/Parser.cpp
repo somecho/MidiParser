@@ -10,7 +10,7 @@ namespace MidiParser {
 Parser::Parser(const std::string &midiFilePath)
     : m_scanner(midiFilePath), m_state(State::NEW), m_prevState(State::NEW),
       m_prevEvent(Event::IDENTIFIER), m_nextEvent(Event::IDENTIFIER),
-      trackCount(0) {
+      m_trackCount(0) {
   m_stateEvents = {
       {State::NEW, Event::IDENTIFIER},
       {State::HEADER_ID_FOUND, Event::FIXED_LENGTH},
@@ -138,8 +138,8 @@ void Parser::onFileFormat() {
 }
 
 void Parser::onNumTracks() {
-  numTracks = ntohs(m_scanner.scan<uint16_t>());
-  std::cout << "Number of tracks: " << numTracks << std::endl;
+  m_numTracks = ntohs(m_scanner.scan<uint16_t>());
+  std::cout << "Number of tracks: " << m_numTracks << std::endl;
   setState(State::NUM_TRACKS_FOUND);
   setNextEvent(Event::TICKS);
 }
@@ -269,10 +269,10 @@ void Parser::onEndOfTrack() {
   if (length != 0) {
     throw std::runtime_error("Length of the end of track event must be 0.");
   }
-  trackCount += 1;
+  m_trackCount += 1;
   setState(State::TRACK_READ);
   setNextEvent(Event::IDENTIFIER);
-  if (trackCount >= numTracks) {
+  if (m_trackCount >= m_numTracks) {
     std::cout << "END OF MIDI FILE" << std::endl;
     setState(State::FINISHED);
     setNextEvent(Event::NO_OP);
