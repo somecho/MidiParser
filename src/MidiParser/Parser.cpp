@@ -71,17 +71,13 @@ void Parser::onIdentifier() {
 
 void Parser::onFixedLength() {
   auto length = ntohl(m_scanner.scan<uint32_t>());
-  setState(State::FIXED_LENGTH_FOUND);
-  if (m_prevState == State::HEADER_ID_FOUND) {
-    std::cout << "Header chunk length: " << length << std::endl;
-    if (length != 6) {
-      throw std::runtime_error("The length of the header chunk must be 6.");
-    }
-    setNextEvent(Event::FILE_FORMAT);
-  } else if (m_prevState == State::TRACK_ID_FOUND) {
-    std::cout << "Track chunk length: " << length << std::endl;
-    setNextEvent(Event::VARIABLE_TIME);
+  if (m_state == State::HEADER_ID_FOUND && length != 6) {
+    throw std::runtime_error("The length of the header chunk must be 6.");
   }
+  auto nextEvent = m_state == State::TRACK_ID_FOUND ? Event::VARIABLE_TIME
+                                                    : Event::FILE_FORMAT;
+  setNextEvent(nextEvent);
+  setState(State::FIXED_LENGTH_FOUND);
 }
 
 void Parser::onFileFormat() {
