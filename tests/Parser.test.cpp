@@ -12,7 +12,7 @@ TEST(ParsingCompleteMidiFile, Multitrack) {
   EXPECT_EQ(parser.getState(), MidiParser::State::FINISHED);
 }
 
-TEST(ProcessingEvents, reaHeader) {
+TEST(ProcessingEvents, Header) {
   auto parser =
       MidiParser::Parser(std::string(TEST_DATA_DIR) + "/midimsgs.mid");
 

@@ -9,15 +9,12 @@
 #include <array>
 #include <cstdint>
 #include <functional>
-#include <set>
 #include <span>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "Scanner.h"
 #include "enums.h"
-#include "tables.h"
 
 namespace MidiParser {
 
@@ -28,8 +25,8 @@ inline std::array<uint8_t, 4> TrackID{/*M*/ 0x4D, /*T*/ 0x54,
                                       /*r*/ 0x72, /*k*/ 0x6B};
 
 class Parser {
- public:
-  explicit Parser(const std::string& midiFilePath);
+public:
+  explicit Parser(const std::string &midiFilePath);
 
   void parse();
   void processEvent(Event event);
@@ -46,7 +43,7 @@ class Parser {
     return u32;
   }
 
- private:
+private:
   Event m_eventRegister;
   Event m_messageRegister;
   uint8_t m_channelRegister;
@@ -86,8 +83,8 @@ class Parser {
   void onMIDIAftertouch();
   void onMIDIPitchBend();
 
-  friend std::unordered_map<Event, std::function<void()>> bindActions(
-      Parser& parser);
+  friend std::unordered_map<Event, std::function<void()>>
+  bindActions(Parser &parser);
 };
 
-}  // namespace MidiParser
+} // namespace MidiParser
