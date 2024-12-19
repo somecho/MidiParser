@@ -1,3 +1,6 @@
+#include <functional>
+
+#include "Parser.h"
 #include "tables.h"
 
 namespace MidiParser {
@@ -45,7 +48,7 @@ const std::set<Event> MidiMessages{
     Event::MIDI_PITCH_BEND,
 };
 
-std::unordered_map<Event, std::function<void()>> bindActions(Parser& parser) {
+std::unordered_map<Event, std::function<void()>> bindActions(Parser &parser) {
   return {
       {Event::IDENTIFIER, [&parser]() { parser.onIdentifier(); }},
       {Event::FIXED_LENGTH, [&parser]() { parser.onFixedLength(); }},
@@ -71,4 +74,4 @@ std::unordered_map<Event, std::function<void()>> bindActions(Parser& parser) {
   };
 }
 
-}  // namespace MidiParser
+} // namespace MidiParser

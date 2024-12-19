@@ -1,12 +1,10 @@
 #pragma once
 
-#include <functional>
 #include <set>
 #include <unordered_map>
 #include <utility>
 
 #include "enums.h"
-#include "parser.h"
 
 namespace MidiParser {
 
