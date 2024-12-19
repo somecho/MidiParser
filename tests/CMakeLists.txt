@@ -1,3 +1,5 @@
+enable_testing()
+
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -23,24 +25,29 @@ target_include_directories(MidiParserTest
 target_compile_definitions(MidiParserTest
   PRIVATE
     EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/data/midi_examples"
+    TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/data/test_examples"
 )
 
 if(UNIX)
-target_compile_options(MidiParserTest PRIVATE
+  target_compile_options(MidiParserTest PRIVATE
     $<$<CONFIG:Debug>:-g -O0 -Wall -Wpedantic>
     $<$<CONFIG:Release>:-O3 -DNDEBUG -s -Wall -Wpedantic>
 )
 endif(UNIX)
 
 if(MSVC)
-target_compile_options(MidiParserTest PRIVATE
+  target_compile_options(MidiParserTest PRIVATE
     $<$<CONFIG:Debug>:/Zi /Od /Wall /W3 /RTC1>
     $<$<CONFIG:Release>: /O2 /DNDEBUG /W3 /WX /GS- /RTC1>
 )
 endif(MSVC)
 
 if(WIN32)
-target_link_libraries(MidiParserTest PRIVATE ws2_32)
+  target_link_libraries(MidiParserTest PRIVATE ws2_32)
 endif(WIN32)
 
 target_link_libraries(MidiParserTest PRIVATE gtest gtest_main)
+
+include(GoogleTest)
+gtest_discover_tests(MidiParserTest)
+

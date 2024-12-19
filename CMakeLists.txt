@@ -9,6 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 set(MIDI_PARSER_SOURCES
   ${CMAKE_SOURCE_DIR}/src/MidiParser/Parser.cpp
   ${CMAKE_SOURCE_DIR}/src/MidiParser/Scanner.cpp
+  ${CMAKE_SOURCE_DIR}/src/MidiParser/enums.cpp
   ${CMAKE_SOURCE_DIR}/src/MidiParser/tables.cpp
 )
 
@@ -37,8 +38,23 @@ target_include_directories(MidiParser
 target_compile_features(MidiParser PUBLIC cxx_std_23)
 
 if(WIN32)
-target_link_libraries(MidiParser PRIVATE ws2_32)
+  target_link_libraries(MidiParser PRIVATE ws2_32)
 endif(WIN32)
+
+if(UNIX)
+  target_compile_options(MidiParser PRIVATE
+    $<$<CONFIG:Debug>:-g -O0 -Wall -Wpedantic>
+    $<$<CONFIG:Release>:-O3 -DNDEBUG -s -Wall -Wpedantic>
+)
+endif(UNIX)
+
+if(MSVC)
+  target_compile_options(MidiParser PRIVATE
+    $<$<CONFIG:Debug>:/Zi /Od /Wall /W3 /RTC1>
+    $<$<CONFIG:Release>: /O2 /DNDEBUG /W3 /WX /GS- /RTC1>
+)
+endif(MSVC)
 
 
 add_subdirectory(tests)
+add_subdirectory(tools)

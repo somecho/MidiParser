@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 namespace MidiParser {
 
@@ -48,4 +49,7 @@ enum class Event : uint8_t {
   MIDI_PITCH_BEND = 0b11100000,
 };
 
-}  // namespace MidiParser
+std::string toString(MidiParser::State s);
+std::string toString(Event e);
+
+} // namespace MidiParser

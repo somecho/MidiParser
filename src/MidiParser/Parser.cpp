@@ -3,23 +3,18 @@
 #include <cmath>
 #include <format>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string_view>
 
 namespace MidiParser {
 
 Parser::Parser(const std::string &midiFilePath)
-    : m_eventRegister(Event::NO_OP),
-      m_messageRegister(Event::NO_OP),
-      m_channelRegister(UINT8_MAX),
-      m_variableLength(UINT32_MAX),
-      m_trackCount(0),
-      m_numTracks(0),
-      m_state(State::NEW),
-      m_prevState(State::NEW),
-      m_prevEvent(Event::IDENTIFIER),
-      m_nextEvent(Event::IDENTIFIER),
-      m_scanner(midiFilePath),
+    : m_eventRegister(Event::NO_OP), m_messageRegister(Event::NO_OP),
+      m_channelRegister(UINT8_MAX), m_variableLength(UINT32_MAX),
+      m_trackCount(0), m_numTracks(0), m_state(State::NEW),
+      m_prevState(State::NEW), m_prevEvent(Event::IDENTIFIER),
+      m_nextEvent(Event::IDENTIFIER), m_scanner(midiFilePath),
       m_actions(bindActions(*this)) {}
 
 void Parser::parse() {
@@ -34,7 +29,10 @@ void Parser::parse() {
 
 void Parser::processEvent(Event event) {
   if (StateEvents.find({m_state, event}) == StateEvents.end()) {
-    throw std::runtime_error("Unable to process event given current state.");
+    std::string msg = std::format(
+        "Unable to process event given current state.\nEvent: {}\nState: {}",
+        toString(event), toString(m_state));
+    throw std::runtime_error(msg);
   }
 
   if (m_actions.find(event) == m_actions.end()) {
@@ -54,6 +52,10 @@ void Parser::setNextEvent(Event event) {
 }
 
 State Parser::getState() const { return m_state; }
+
+Event Parser::getEventRegister() const { return m_eventRegister; }
+
+Event Parser::getMessageRegister() const { return m_messageRegister; }
 
 void Parser::onIdentifier() {
   auto identifier = m_scanner.scan<4>();
@@ -109,7 +111,7 @@ void Parser::onVariableTime() {
   auto byte = m_scanner.scan<uint8_t>();
   bool isMeta = byte == 0xFF;
   bool isMidi = byte >= 0x80 && byte <= 0xEF;
-  bool isLastByte = 0x00 <= byte && byte <= 0x7F;  // Bytes where the MSB = 0
+  bool isLastByte = 0x00 <= byte && byte <= 0x7F; // Bytes where the MSB = 0
   bool shouldReadVariableTime =
       m_state == State::EVENT_READ || m_state == State::READING_VARIABLE_TIME;
   std::cout << std::format("Found byte: {:02X}", byte) << std::endl;
@@ -295,4 +297,4 @@ void Parser::onMIDIPitchBend() {
   setNextEvent(Event::VARIABLE_TIME);
 }
 
-}  // namespace MidiParser
+} // namespace MidiParser

@@ -34,6 +34,8 @@ class Parser {
   void parse();
   void processEvent(Event event);
   State getState() const;
+  Event getEventRegister() const;
+  Event getMessageRegister() const;
 
   static inline uint32_t variableTo32(std::span<uint8_t> buffer) {
     uint32_t u32 = 0;
