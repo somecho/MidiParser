@@ -1,19 +1,26 @@
-#include "Parser.h"
-
 #include <cmath>
 #include <format>
 #include <iostream>
 #include <stdexcept>
 #include <string_view>
 
+#include "Parser.h"
+#include "tables.h"
+
 namespace MidiParser {
 
-Parser::Parser(const std::string &midiFilePath)
-    : m_eventRegister(Event::NO_OP), m_messageRegister(Event::NO_OP),
-      m_channelRegister(UINT8_MAX), m_variableLength(UINT32_MAX),
-      m_trackCount(0), m_numTracks(0), m_state(State::NEW),
-      m_prevState(State::NEW), m_prevEvent(Event::IDENTIFIER),
-      m_nextEvent(Event::IDENTIFIER), m_scanner(midiFilePath),
+Parser::Parser(const std::string& midiFilePath)
+    : m_eventRegister(Event::NO_OP),
+      m_messageRegister(Event::NO_OP),
+      m_channelRegister(UINT8_MAX),
+      m_variableLength(UINT32_MAX),
+      m_trackCount(0),
+      m_numTracks(0),
+      m_state(State::NEW),
+      m_prevState(State::NEW),
+      m_prevEvent(Event::IDENTIFIER),
+      m_nextEvent(Event::IDENTIFIER),
+      m_scanner(midiFilePath),
       m_actions(bindActions(*this)) {}
 
 void Parser::parse() {
@@ -50,11 +57,17 @@ void Parser::setNextEvent(Event event) {
   m_nextEvent = event;
 }
 
-State Parser::getState() const { return m_state; }
+State Parser::getState() const {
+  return m_state;
+}
 
-Event Parser::getEventRegister() const { return m_eventRegister; }
+Event Parser::getEventRegister() const {
+  return m_eventRegister;
+}
 
-Event Parser::getMessageRegister() const { return m_messageRegister; }
+Event Parser::getMessageRegister() const {
+  return m_messageRegister;
+}
 
 void Parser::onIdentifier() {
   auto identifier = m_scanner.scan<4>();
@@ -110,7 +123,7 @@ void Parser::onVariableTime() {
   auto byte = m_scanner.scan<uint8_t>();
   bool isMeta = byte == 0xFF;
   bool isMidi = byte >= 0x80 && byte <= 0xEF;
-  bool isLastByte = 0x00 <= byte && byte <= 0x7F; // Bytes where the MSB = 0
+  bool isLastByte = 0x00 <= byte && byte <= 0x7F;  // Bytes where the MSB = 0
   bool shouldReadVariableTime =
       m_state == State::EVENT_READ || m_state == State::READING_VARIABLE_TIME;
   std::cout << std::format("Found byte: {:02X}", byte) << std::endl;
@@ -172,6 +185,53 @@ void Parser::onMetaType() {
   }
 }
 
+void Parser::onSequenceNumber() {}
+
+void Parser::onText() {
+  if (m_eventRegister != Event::TEXT) {
+    m_eventRegister = Event::TEXT;
+    setNextEvent(Event::VARIABLE_TIME);
+  } else {
+    auto buffer = m_scanner.scan(m_variableLength);
+    std::cout << "TEXT EVENT" << std::endl;
+    std::cout << std::string_view(reinterpret_cast<char*>(buffer.data()),
+                                  m_variableLength)
+              << std::endl;
+    setState(State::EVENT_READ);
+    m_eventRegister = Event::NO_OP;
+    setNextEvent(Event::VARIABLE_TIME);
+  }
+}
+
+void Parser::onCopyrightNotice() {};
+
+void Parser::onTrackName() {};
+
+void Parser::onInstrumentName() {};
+
+void Parser::onLyric() {};
+
+void Parser::onMarker() {};
+
+void Parser::onCue() {};
+
+void Parser::onChannelPrefix() {};
+
+void Parser::onEndOfTrack() {
+  auto length = m_scanner.scan<uint8_t>();
+  if (length != 0) {
+    throw std::runtime_error("Length of the end of track event must be 0.");
+  }
+  m_trackCount += 1;
+  setState(State::TRACK_READ);
+  setNextEvent(Event::IDENTIFIER);
+  if (m_trackCount >= m_numTracks) {
+    std::cout << "END OF MIDI FILE" << std::endl;
+    setState(State::FINISHED);
+    setNextEvent(Event::NO_OP);
+  }
+}
+
 void Parser::onSetTempo() {
   auto length = m_scanner.scan<uint8_t>();
   if (length != 3) {
@@ -183,6 +243,8 @@ void Parser::onSetTempo() {
   setState(State::EVENT_READ);
   setNextEvent(Event::VARIABLE_TIME);
 }
+
+void Parser::onSMPTEOffset() {};
 
 void Parser::onTimeSignature() {
   auto length = m_scanner.scan<uint8_t>();
@@ -205,36 +267,7 @@ void Parser::onTimeSignature() {
   setNextEvent(Event::VARIABLE_TIME);
 }
 
-void Parser::onEndOfTrack() {
-  auto length = m_scanner.scan<uint8_t>();
-  if (length != 0) {
-    throw std::runtime_error("Length of the end of track event must be 0.");
-  }
-  m_trackCount += 1;
-  setState(State::TRACK_READ);
-  setNextEvent(Event::IDENTIFIER);
-  if (m_trackCount >= m_numTracks) {
-    std::cout << "END OF MIDI FILE" << std::endl;
-    setState(State::FINISHED);
-    setNextEvent(Event::NO_OP);
-  }
-}
-
-void Parser::onText() {
-  if (m_eventRegister != Event::TEXT) {
-    m_eventRegister = Event::TEXT;
-    setNextEvent(Event::VARIABLE_TIME);
-  } else {
-    auto buffer = m_scanner.scan(m_variableLength);
-    std::cout << "TEXT EVENT" << std::endl;
-    std::cout << std::string_view(reinterpret_cast<char *>(buffer.data()),
-                                  m_variableLength)
-              << std::endl;
-    setState(State::EVENT_READ);
-    m_eventRegister = Event::NO_OP;
-    setNextEvent(Event::VARIABLE_TIME);
-  }
-}
+void Parser::onKeySignature() {};
 
 void Parser::onMIDIControlChange() {
   uint8_t controllerNumber = m_scanner.scan<uint8_t>();
@@ -296,4 +329,4 @@ void Parser::onMIDIPitchBend() {
   setNextEvent(Event::VARIABLE_TIME);
 }
 
-} // namespace MidiParser
+}  // namespace MidiParser

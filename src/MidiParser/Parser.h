@@ -25,8 +25,8 @@ inline std::array<uint8_t, 4> TrackID{/*M*/ 0x4D, /*T*/ 0x54,
                                       /*r*/ 0x72, /*k*/ 0x6B};
 
 class Parser {
-public:
-  explicit Parser(const std::string &midiFilePath);
+ public:
+  explicit Parser(const std::string& midiFilePath);
 
   void parse();
   void processEvent(Event event);
@@ -43,7 +43,7 @@ public:
     return u32;
   }
 
-private:
+ private:
   Event m_eventRegister;
   Event m_messageRegister;
   uint8_t m_channelRegister;
@@ -71,10 +71,26 @@ private:
   void onTicks();
   void onVariableTime();
   void onMetaType();
-  void onSetTempo();
-  void onTimeSignature();
-  void onEndOfTrack();
+
+  // Meta Event Handlers
+
+  void onSequenceNumber();
   void onText();
+  void onCopyrightNotice();
+  void onTrackName();
+  void onInstrumentName();
+  void onLyric();
+  void onMarker();
+  void onCue();
+  void onChannelPrefix();
+  void onEndOfTrack();
+  void onSetTempo();
+  void onSMPTEOffset();
+  void onTimeSignature();
+  void onKeySignature();
+
+  // Midi Event Handlers
+
   void onMIDINoteOff();
   void onMIDINoteOn();
   void onMIDIPolyAftertouch();
@@ -83,8 +99,8 @@ private:
   void onMIDIAftertouch();
   void onMIDIPitchBend();
 
-  friend std::unordered_map<Event, std::function<void()>>
-  bindActions(Parser &parser);
+  friend std::unordered_map<Event, std::function<void()>> bindActions(
+      Parser& parser);
 };
 
-} // namespace MidiParser
+}  // namespace MidiParser

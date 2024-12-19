@@ -1,5 +1,4 @@
 #include <cstdint>
-#include <format>
 #include <fstream>
 #include <iostream>
 #include <vector>
