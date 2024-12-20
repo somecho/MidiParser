@@ -156,8 +156,7 @@ void Parser::onVariableTime() {
     setState(State::MIDI_FOUND);
     setNextEvent(m_messageRegister);
     if (MidiMessages.find(m_messageRegister) == MidiMessages.end()) {
-      std::cout << "not implemented" << std::endl;
-      setState(State::FINISHED);
+      throw std::runtime_error("Unrecognized midi event.");
     }
     return;
   }
@@ -176,8 +175,7 @@ void Parser::onMetaType() {
   auto typeByte = m_scanner.scan<uint8_t>();
   auto metaType = Event(typeByte);
   if (MetaHandlers.find(metaType) == MetaHandlers.end()) {
-    std::cout << "Not yet implemented" << std::endl;
-    setState(State::FINISHED);
+    throw std::runtime_error("Unrecognized meta event!");
   } else {
     setState(MetaHandlers.at(metaType));
     setNextEvent(metaType);
@@ -189,12 +187,18 @@ void Parser::onSequenceNumber() {
   if (length == 0) {
     setState(State::EVENT_READ);
     setNextEvent(Event::VARIABLE_TIME);
+    m_midiTracks.at(m_trackCount)
+        .events.emplace_back(
+            MetaSequenceNumberEvent{{m_deltaTimeRegister}, true, 0});
     return;
   }
   if (length == 2) {
     auto sequenceNumber = m_scanner.scan<uint16_t>();
     setState(State::EVENT_READ);
     setNextEvent(Event::VARIABLE_TIME);
+    m_midiTracks.at(m_trackCount)
+        .events.emplace_back(MetaSequenceNumberEvent{
+            {m_deltaTimeRegister}, false, sequenceNumber});
     return;
   }
   throw std::runtime_error(

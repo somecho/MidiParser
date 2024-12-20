@@ -92,17 +92,21 @@ struct MetaKeySignatureEvent : BaseTrackEvent {
   uint8_t mode;
 };
 
+struct MetaSequenceNumberEvent : BaseTrackEvent {
+  bool numberOmmited;
+  uint16_t number;
+};
+
 using MIDIEvent =
     std::variant<MIDIControlChangeEvent, MIDINoteOnEvent, MIDINoteOffEvent,
                  MIDIPolyAftertouchEvent, MIDIProgramChangeEvent,
                  MIDIAftertouchEvent, MIDIPitchBendEvent>;
 
-using MetaEvent =
-    std::variant<MetaTextEvent, MetaCopyrightNoticeEvent,
-                 MetaInstrumentNameEvent, MetaTrackNameEvent, MetaLyricEvent,
-                 MetaMarkerEvent, MetaCueEvent, MetaChannelEvent,
-                 MetaSetTempoEvent, MetaSMPTEOffsetEvent,
-                 MetaTimeSignatureEvent, MetaKeySignatureEvent>;
+using MetaEvent = std::variant<
+    MetaTextEvent, MetaCopyrightNoticeEvent, MetaInstrumentNameEvent,
+    MetaTrackNameEvent, MetaLyricEvent, MetaMarkerEvent, MetaCueEvent,
+    MetaChannelEvent, MetaSetTempoEvent, MetaSMPTEOffsetEvent,
+    MetaTimeSignatureEvent, MetaKeySignatureEvent, MetaSequenceNumberEvent>;
 
 using TrackEvent = std::variant<MIDIEvent, MetaEvent>;
 
