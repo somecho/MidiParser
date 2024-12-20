@@ -128,11 +128,11 @@ void Parser::onVariableTime() {
   bool isLastByte = 0x00 <= byte && byte <= 0x7F;  // Bytes where the MSB = 0
   bool shouldReadVariableTime =
       m_state == State::EVENT_READ || m_state == State::READING_VARIABLE_TIME;
-  std::cout << std::format("Found byte: {:02X}", byte) << std::endl;
 
   if (isLastByte) {
     m_bytesRegister.emplace_back(byte);
     m_variableLength = variableTo32(m_bytesRegister);
+    m_deltaTimeRegister = m_variableLength;
     m_bytesRegister.clear();
     setState(State::VARIABLE_TIME_READ);
     if (TextEvents.find(m_eventRegister) != TextEvents.end()) {
@@ -174,7 +174,6 @@ void Parser::onVariableTime() {
 
 void Parser::onMetaType() {
   auto typeByte = m_scanner.scan<uint8_t>();
-  std::cout << std::format("Found byte: {:02X}", typeByte) << std::endl;
   auto metaType = Event(typeByte);
   if (MetaHandlers.find(metaType) == MetaHandlers.end()) {
     std::cout << "Not yet implemented" << std::endl;
@@ -208,13 +207,14 @@ void Parser::onText() {
     setNextEvent(Event::VARIABLE_TIME);
   } else {
     auto buffer = m_scanner.scan(m_variableLength);
-    std::cout << "TEXT EVENT" << std::endl;
-    std::cout << std::string_view(reinterpret_cast<char*>(buffer.data()),
-                                  m_variableLength)
-              << std::endl;
     setState(State::EVENT_READ);
     m_eventRegister = Event::NO_OP;
     setNextEvent(Event::VARIABLE_TIME);
+    m_midiTracks.at(m_trackCount)
+        .events.emplace_back(
+            MetaTextEvent{m_deltaTimeRegister,
+                          std::string(reinterpret_cast<char*>(buffer.data()),
+                                      buffer.size())});
   }
 }
 
@@ -224,13 +224,14 @@ void Parser::onCopyrightNotice() {
     setNextEvent(Event::VARIABLE_TIME);
   } else {
     auto buffer = m_scanner.scan(m_variableLength);
-    std::cout << "COPYRIGHT NOTICE" << std::endl;
-    std::cout << std::string_view(reinterpret_cast<char*>(buffer.data()),
-                                  m_variableLength)
-              << std::endl;
     setState(State::EVENT_READ);
     m_eventRegister = Event::NO_OP;
     setNextEvent(Event::VARIABLE_TIME);
+    m_midiTracks.at(m_trackCount)
+        .events.emplace_back(MetaCopyrightNoticeEvent{
+            m_deltaTimeRegister,
+            std::string(reinterpret_cast<char*>(buffer.data()),
+                        buffer.size())});
   }
 };
 
@@ -240,13 +241,14 @@ void Parser::onTrackName() {
     setNextEvent(Event::VARIABLE_TIME);
   } else {
     auto buffer = m_scanner.scan(m_variableLength);
-    std::cout << "TRACK NAME" << std::endl;
-    std::cout << std::string_view(reinterpret_cast<char*>(buffer.data()),
-                                  m_variableLength)
-              << std::endl;
     setState(State::EVENT_READ);
     m_eventRegister = Event::NO_OP;
     setNextEvent(Event::VARIABLE_TIME);
+    m_midiTracks.at(m_trackCount)
+        .events.emplace_back(MetaTrackNameEvent{
+            m_deltaTimeRegister,
+            std::string(reinterpret_cast<char*>(buffer.data()),
+                        buffer.size())});
   }
 };
 
@@ -256,13 +258,14 @@ void Parser::onInstrumentName() {
     setNextEvent(Event::VARIABLE_TIME);
   } else {
     auto buffer = m_scanner.scan(m_variableLength);
-    std::cout << "INSTRUMENT" << std::endl;
-    std::cout << std::string_view(reinterpret_cast<char*>(buffer.data()),
-                                  m_variableLength)
-              << std::endl;
     setState(State::EVENT_READ);
     m_eventRegister = Event::NO_OP;
     setNextEvent(Event::VARIABLE_TIME);
+    m_midiTracks.at(m_trackCount)
+        .events.emplace_back(MetaInstrumentNameEvent{
+            m_deltaTimeRegister,
+            std::string(reinterpret_cast<char*>(buffer.data()),
+                        buffer.size())});
   }
 };
 
@@ -272,13 +275,14 @@ void Parser::onLyric() {
     setNextEvent(Event::VARIABLE_TIME);
   } else {
     auto buffer = m_scanner.scan(m_variableLength);
-    std::cout << "LYRIC" << std::endl;
-    std::cout << std::string_view(reinterpret_cast<char*>(buffer.data()),
-                                  m_variableLength)
-              << std::endl;
     setState(State::EVENT_READ);
     m_eventRegister = Event::NO_OP;
     setNextEvent(Event::VARIABLE_TIME);
+    m_midiTracks.at(m_trackCount)
+        .events.emplace_back(
+            MetaLyricEvent{m_deltaTimeRegister,
+                           std::string(reinterpret_cast<char*>(buffer.data()),
+                                       buffer.size())});
   }
 };
 
@@ -288,13 +292,14 @@ void Parser::onMarker() {
     setNextEvent(Event::VARIABLE_TIME);
   } else {
     auto buffer = m_scanner.scan(m_variableLength);
-    std::cout << "MARKER" << std::endl;
-    std::cout << std::string_view(reinterpret_cast<char*>(buffer.data()),
-                                  m_variableLength)
-              << std::endl;
     setState(State::EVENT_READ);
     m_eventRegister = Event::NO_OP;
     setNextEvent(Event::VARIABLE_TIME);
+    m_midiTracks.at(m_trackCount)
+        .events.emplace_back(
+            MetaMarkerEvent{m_deltaTimeRegister,
+                            std::string(reinterpret_cast<char*>(buffer.data()),
+                                        buffer.size())});
   }
 };
 
@@ -304,13 +309,14 @@ void Parser::onCue() {
     setNextEvent(Event::VARIABLE_TIME);
   } else {
     auto buffer = m_scanner.scan(m_variableLength);
-    std::cout << "CUE" << std::endl;
-    std::cout << std::string_view(reinterpret_cast<char*>(buffer.data()),
-                                  m_variableLength)
-              << std::endl;
     setState(State::EVENT_READ);
     m_eventRegister = Event::NO_OP;
     setNextEvent(Event::VARIABLE_TIME);
+    m_midiTracks.at(m_trackCount)
+        .events.emplace_back(
+            MetaCueEvent{m_deltaTimeRegister,
+                         std::string(reinterpret_cast<char*>(buffer.data()),
+                                     buffer.size())});
   }
 };
 
@@ -320,9 +326,10 @@ void Parser::onChannelPrefix() {
     throw std::runtime_error("Length of channel prefix meta message must be 1");
   }
   auto channel = m_scanner.scan<uint8_t>();
-  std::cout << std::format("Meta channel prefix: {}", channel) << std::endl;
   setState(State::EVENT_READ);
   setNextEvent(Event::VARIABLE_TIME);
+  m_midiTracks.at(m_trackCount)
+      .events.emplace_back(MetaChannelEvent{m_deltaTimeRegister, channel});
 };
 
 void Parser::onEndOfTrack() {
@@ -334,7 +341,6 @@ void Parser::onEndOfTrack() {
   setState(State::TRACK_READ);
   setNextEvent(Event::IDENTIFIER);
   if (m_trackCount >= m_numTracks) {
-    std::cout << "END OF MIDI FILE" << std::endl;
     setState(State::FINISHED);
     setNextEvent(Event::NO_OP);
   }
@@ -347,9 +353,10 @@ void Parser::onSetTempo() {
   }
   auto buffer = m_scanner.scan<3>();
   auto tempo = variableTo32(buffer);
-  std::cout << "Tempo: " << tempo << std::endl;
   setState(State::EVENT_READ);
   setNextEvent(Event::VARIABLE_TIME);
+  m_midiTracks.at(m_trackCount)
+      .events.emplace_back(MetaSetTempoEvent{m_deltaTimeRegister, tempo});
 }
 
 void Parser::onSMPTEOffset() {
@@ -358,9 +365,11 @@ void Parser::onSMPTEOffset() {
     throw std::runtime_error("Length of SMPTE offset meta event must be 5");
   }
   auto data = m_scanner.scan<5>();
-  std::cout << "SMPTE OFFSET EVENT" << std::endl;
   setState(State::EVENT_READ);
   setNextEvent(Event::VARIABLE_TIME);
+  m_midiTracks.at(m_trackCount)
+      .events.emplace_back(MetaSMPTEOffsetEvent{
+          m_deltaTimeRegister, data[0], data[1], data[2], data[3], data[4]});
 };
 
 void Parser::onTimeSignature() {
@@ -373,15 +382,12 @@ void Parser::onTimeSignature() {
   auto denominator = m_scanner.scan<uint8_t>();
   auto clocksPerClick = m_scanner.scan<uint8_t>();
   auto quarterDivision = m_scanner.scan<uint8_t>();
-  std::cout << "Time Signature: " << std::endl;
-  std::cout << std::format("Numerator: {}", numerator) << std::endl;
-  std::cout << "Denominator: " << pow(2, denominator) << std::endl;
-  std::cout << std::format("Midi clocks per click: {}", clocksPerClick)
-            << std::endl;
-  std::cout << std::format("32nds in a quarter: {}", quarterDivision)
-            << std::endl;
   setState(State::EVENT_READ);
   setNextEvent(Event::VARIABLE_TIME);
+  m_midiTracks.at(m_trackCount)
+      .events.emplace_back(MetaSMPTEOffsetEvent{m_deltaTimeRegister, numerator,
+                                                denominator, clocksPerClick,
+                                                quarterDivision});
 }
 
 void Parser::onKeySignature() {
@@ -391,10 +397,12 @@ void Parser::onKeySignature() {
         "Length of the key signature meta event must be 2.");
   }
   auto sign = m_scanner.scan<int8_t>();
-  auto tonality = m_scanner.scan<uint8_t>();
-  std::cout << "Key Signature event" << std::endl;
+  auto mode = m_scanner.scan<uint8_t>();
   setState(State::EVENT_READ);
   setNextEvent(Event::VARIABLE_TIME);
+  m_midiTracks.at(m_trackCount)
+      .events.emplace_back(
+          MetaKeySignatureEvent{m_deltaTimeRegister, sign, mode});
 };
 
 void Parser::onMIDIControlChange() {

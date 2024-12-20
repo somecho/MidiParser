@@ -48,6 +48,7 @@ class Parser {
   Event m_eventRegister;
   Event m_messageRegister;
   uint8_t m_channelRegister;
+  uint32_t m_deltaTimeRegister;
   std::vector<uint8_t> m_bytesRegister;
 
   uint32_t m_variableLength;
