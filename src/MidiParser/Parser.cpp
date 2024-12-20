@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include "Parser.h"
+#include "events.h"
 #include "tables.h"
 
 namespace MidiParser {
@@ -102,6 +103,7 @@ void Parser::onFileFormat() {
 
 void Parser::onNumTracks() {
   m_numTracks = ntohs(m_scanner.scan<uint16_t>());
+  m_midiTracks.resize(m_numTracks);
   setState(State::NUM_TRACKS_FOUND);
   setNextEvent(Event::TICKS);
 }
@@ -147,12 +149,10 @@ void Parser::onVariableTime() {
   }
 
   if (isMidi && !shouldReadVariableTime) {
-    std::cout << "Found midi event" << std::endl;
     static const uint8_t messageMask = 0b11110000;
     static const uint8_t channelMask = 0b00001111;
     m_messageRegister = static_cast<Event>(byte & messageMask);
     m_channelRegister = byte & channelMask;
-    std::cout << std::format("Midi message: {:08B}", byte) << std::endl;
     setState(State::MIDI_FOUND);
     setNextEvent(m_messageRegister);
     if (MidiMessages.find(m_messageRegister) == MidiMessages.end()) {
@@ -400,61 +400,69 @@ void Parser::onKeySignature() {
 void Parser::onMIDIControlChange() {
   uint8_t controllerNumber = m_scanner.scan<uint8_t>();
   uint8_t value = m_scanner.scan<uint8_t>();
-  std::cout << std::format("Control Change: Controller - {}, Value - {}",
-                           controllerNumber, value)
-            << std::endl;
   setState(State::EVENT_READ);
   setNextEvent(Event::VARIABLE_TIME);
+  m_midiTracks.at(m_trackCount)
+      .events.emplace_back(MIDIControlChangeEvent{
+          m_variableLength, m_channelRegister, controllerNumber, value});
 }
 
 void Parser::onMIDINoteOn() {
   uint8_t key = m_scanner.scan<uint8_t>();
   uint8_t velocity = m_scanner.scan<uint8_t>();
-  std::cout << std::format("Note on: Note - {}, Velocity - {}", key, velocity)
-            << std::endl;
   setState(State::EVENT_READ);
   setNextEvent(Event::VARIABLE_TIME);
+  m_midiTracks.at(m_trackCount)
+      .events.emplace_back(
+          MIDINoteOnEvent{m_variableLength, m_channelRegister, key, velocity});
 }
 
 void Parser::onMIDIPolyAftertouch() {
   uint8_t key = m_scanner.scan<uint8_t>();
   uint8_t value = m_scanner.scan<uint8_t>();
-  std::cout << std::format("Poly aftertouch: Note - {}, value - {}", key, value)
-            << std::endl;
   setState(State::EVENT_READ);
   setNextEvent(Event::VARIABLE_TIME);
+  m_midiTracks.at(m_trackCount)
+      .events.emplace_back(MIDIPolyAftertouchEvent{
+          m_variableLength, m_channelRegister, key, value});
 }
 
 void Parser::onMIDIProgramChange() {
   uint8_t program = m_scanner.scan<uint8_t>();
-  std::cout << std::format("Program change: {}", program) << std::endl;
   setState(State::EVENT_READ);
   setNextEvent(Event::VARIABLE_TIME);
+  m_midiTracks.at(m_trackCount)
+      .events.emplace_back(
+          MIDIProgramChangeEvent{m_variableLength, m_channelRegister, program});
 }
 
 void Parser::onMIDIAftertouch() {
   uint8_t value = m_scanner.scan<uint8_t>();
-  std::cout << std::format("Aftertouch: value - {}", value) << std::endl;
   setState(State::EVENT_READ);
   setNextEvent(Event::VARIABLE_TIME);
+  m_midiTracks.at(m_trackCount)
+      .events.emplace_back(
+          MIDIAftertouchEvent{m_variableLength, m_channelRegister, value});
 }
 
 void Parser::onMIDINoteOff() {
   uint8_t key = m_scanner.scan<uint8_t>();
   uint8_t velocity = m_scanner.scan<uint8_t>();
-  std::cout << std::format("Note off: Note - {}, Velocity - {}", key, velocity)
-            << std::endl;
   setState(State::EVENT_READ);
   setNextEvent(Event::VARIABLE_TIME);
+  m_midiTracks.at(m_trackCount)
+      .events.emplace_back(
+          MIDINoteOffEvent{m_variableLength, m_channelRegister, key, velocity});
 }
 
 void Parser::onMIDIPitchBend() {
   auto data = m_scanner.scan<2>();
   uint8_t value = (data[0] << 7) + data[1];
-
-  std::cout << std::format("Pitchbend: {}", value) << std::endl;
   setState(State::EVENT_READ);
   setNextEvent(Event::VARIABLE_TIME);
+  m_midiTracks.at(m_trackCount)
+      .events.emplace_back(
+          MIDIPitchBendEvent{m_variableLength, m_channelRegister, value});
 }
 
 }  // namespace MidiParser

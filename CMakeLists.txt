@@ -18,6 +18,8 @@ set(MIDI_PARSER_HEADERS
   ${CMAKE_SOURCE_DIR}/src/MidiParser/Scanner.h
   ${CMAKE_SOURCE_DIR}/src/MidiParser/enums.h
   ${CMAKE_SOURCE_DIR}/src/MidiParser/tables.h
+  ${CMAKE_SOURCE_DIR}/src/MidiParser/MidiTrack.h
+  ${CMAKE_SOURCE_DIR}/src/MidiParser/events.h
 )
 
 target_sources(MidiParser

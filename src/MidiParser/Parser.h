@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MidiParser/MidiTrack.h"
 #ifdef WIN32
 #include <winsock.h>
 #else
@@ -52,6 +53,7 @@ class Parser {
   uint32_t m_variableLength;
   uint16_t m_trackCount;
   uint16_t m_numTracks;
+  std::vector<MidiTrack> m_midiTracks;
 
   State m_state;
   State m_prevState;
