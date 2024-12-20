@@ -185,7 +185,22 @@ void Parser::onMetaType() {
   }
 }
 
-void Parser::onSequenceNumber() {}
+void Parser::onSequenceNumber() {
+  auto length = m_scanner.scan<uint8_t>();
+  if (length == 0) {
+    setState(State::EVENT_READ);
+    setNextEvent(Event::VARIABLE_TIME);
+    return;
+  }
+  if (length == 2) {
+    auto sequenceNumber = m_scanner.scan<uint16_t>();
+    setState(State::EVENT_READ);
+    setNextEvent(Event::VARIABLE_TIME);
+    return;
+  }
+  throw std::runtime_error(
+      "Length of sequence number meta event must be either 0 or 2.");
+}
 
 void Parser::onText() {
   if (m_eventRegister != Event::TEXT) {
