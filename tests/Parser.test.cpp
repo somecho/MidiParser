@@ -89,24 +89,24 @@ TEST(ProcessingEvents, MetaMessages) {
       {MidiParser::State::META_SEQUENCE_NUMBER_FOUND,
        MidiParser::Event::SEQUENCE_NUMBER},
       {MidiParser::State::META_TEXT_FOUND, MidiParser::Event::TEXT},
-      /* {MidiParser::State::META_COPYRIGHT_NOTICE_FOUND, */
-      /*  MidiParser::Event::COPYRIGHT_NOTICE}, */
-      /* {MidiParser::State::META_TRACK_NAME_FOUND, MidiParser::Event::TRACK_NAME}, */
-      /* {MidiParser::State::META_INSTRUMENT_NAME_FOUND, */
-      /*  MidiParser::Event::INSTRUMENT_NAME}, */
-      /* {MidiParser::State::META_LYRIC_FOUND, MidiParser::Event::LYRIC}, */
-      /* {MidiParser::State::META_MARKER_FOUND, MidiParser::Event::MARKER}, */
-      /* {MidiParser::State::META_CUE_FOUND, MidiParser::Event::CUE}, */
-      /* {MidiParser::State::META_CHANNEL_PREFIX_FOUND, */
-      /*  MidiParser::Event::CHANNEl_PREFIX}, */
-      /* {MidiParser::State::META_SET_TEMPO_FOUND, MidiParser::Event::SET_TEMPO}, */
-      /* {MidiParser::State::META_SMPTE_OFFSET_FOUND, */
-      /*  MidiParser::Event::SMPTE_OFFSET}, */
-      /* {MidiParser::State::META_TIME_SIGNATURE_FOUND, */
-      /*  MidiParser::Event::TIME_SIGNATURE}, */
-      /* {MidiParser::State::META_KEY_SIGNATURE_FOUND, */
-      /*  MidiParser::Event::KEY_SIGNATURE}, */
-      /* {MidiParser::State::END_OF_TRACK_FOUND, MidiParser::Event::END_OF_TRACK}, */
+      {MidiParser::State::META_COPYRIGHT_NOTICE_FOUND,
+       MidiParser::Event::COPYRIGHT_NOTICE},
+      {MidiParser::State::META_TRACK_NAME_FOUND, MidiParser::Event::TRACK_NAME},
+      {MidiParser::State::META_INSTRUMENT_NAME_FOUND,
+       MidiParser::Event::INSTRUMENT_NAME},
+      {MidiParser::State::META_LYRIC_FOUND, MidiParser::Event::LYRIC},
+      {MidiParser::State::META_MARKER_FOUND, MidiParser::Event::MARKER},
+      {MidiParser::State::META_CUE_FOUND, MidiParser::Event::CUE},
+      {MidiParser::State::META_CHANNEL_PREFIX_FOUND,
+       MidiParser::Event::CHANNEl_PREFIX},
+      {MidiParser::State::META_SET_TEMPO_FOUND, MidiParser::Event::SET_TEMPO},
+      {MidiParser::State::META_SMPTE_OFFSET_FOUND,
+       MidiParser::Event::SMPTE_OFFSET},
+      {MidiParser::State::META_TIME_SIGNATURE_FOUND,
+       MidiParser::Event::TIME_SIGNATURE},
+      {MidiParser::State::META_KEY_SIGNATURE_FOUND,
+       MidiParser::Event::KEY_SIGNATURE},
+      {MidiParser::State::END_OF_TRACK_FOUND, MidiParser::Event::END_OF_TRACK},
   };
 
   for (const auto& p : events) {
@@ -125,10 +125,9 @@ TEST(ProcessingEvents, MetaMessages) {
     }
 
     if (p.second == MidiParser::Event::END_OF_TRACK) {
-      EXPECT_EQ(parser.getState(), MidiParser::State::TRACK_READ);
-
+      ASSERT_EQ(parser.getState(), MidiParser::State::FINISHED);
     } else {
-      EXPECT_EQ(parser.getState(), MidiParser::State::EVENT_READ);
+      ASSERT_EQ(parser.getState(), MidiParser::State::EVENT_READ);
     }
   }
 }

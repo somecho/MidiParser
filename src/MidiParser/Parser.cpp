@@ -218,19 +218,112 @@ void Parser::onText() {
   }
 }
 
-void Parser::onCopyrightNotice() {};
+void Parser::onCopyrightNotice() {
+  if (m_eventRegister != Event::COPYRIGHT_NOTICE) {
+    m_eventRegister = Event::COPYRIGHT_NOTICE;
+    setNextEvent(Event::VARIABLE_TIME);
+  } else {
+    auto buffer = m_scanner.scan(m_variableLength);
+    std::cout << "COPYRIGHT NOTICE" << std::endl;
+    std::cout << std::string_view(reinterpret_cast<char*>(buffer.data()),
+                                  m_variableLength)
+              << std::endl;
+    setState(State::EVENT_READ);
+    m_eventRegister = Event::NO_OP;
+    setNextEvent(Event::VARIABLE_TIME);
+  }
+};
 
-void Parser::onTrackName() {};
+void Parser::onTrackName() {
+  if (m_eventRegister != Event::TRACK_NAME) {
+    m_eventRegister = Event::TRACK_NAME;
+    setNextEvent(Event::VARIABLE_TIME);
+  } else {
+    auto buffer = m_scanner.scan(m_variableLength);
+    std::cout << "TRACK NAME" << std::endl;
+    std::cout << std::string_view(reinterpret_cast<char*>(buffer.data()),
+                                  m_variableLength)
+              << std::endl;
+    setState(State::EVENT_READ);
+    m_eventRegister = Event::NO_OP;
+    setNextEvent(Event::VARIABLE_TIME);
+  }
+};
 
-void Parser::onInstrumentName() {};
+void Parser::onInstrumentName() {
+  if (m_eventRegister != Event::INSTRUMENT_NAME) {
+    m_eventRegister = Event::INSTRUMENT_NAME;
+    setNextEvent(Event::VARIABLE_TIME);
+  } else {
+    auto buffer = m_scanner.scan(m_variableLength);
+    std::cout << "INSTRUMENT" << std::endl;
+    std::cout << std::string_view(reinterpret_cast<char*>(buffer.data()),
+                                  m_variableLength)
+              << std::endl;
+    setState(State::EVENT_READ);
+    m_eventRegister = Event::NO_OP;
+    setNextEvent(Event::VARIABLE_TIME);
+  }
+};
 
-void Parser::onLyric() {};
+void Parser::onLyric() {
+  if (m_eventRegister != Event::LYRIC) {
+    m_eventRegister = Event::LYRIC;
+    setNextEvent(Event::VARIABLE_TIME);
+  } else {
+    auto buffer = m_scanner.scan(m_variableLength);
+    std::cout << "LYRIC" << std::endl;
+    std::cout << std::string_view(reinterpret_cast<char*>(buffer.data()),
+                                  m_variableLength)
+              << std::endl;
+    setState(State::EVENT_READ);
+    m_eventRegister = Event::NO_OP;
+    setNextEvent(Event::VARIABLE_TIME);
+  }
+};
 
-void Parser::onMarker() {};
+void Parser::onMarker() {
+  if (m_eventRegister != Event::MARKER) {
+    m_eventRegister = Event::MARKER;
+    setNextEvent(Event::VARIABLE_TIME);
+  } else {
+    auto buffer = m_scanner.scan(m_variableLength);
+    std::cout << "MARKER" << std::endl;
+    std::cout << std::string_view(reinterpret_cast<char*>(buffer.data()),
+                                  m_variableLength)
+              << std::endl;
+    setState(State::EVENT_READ);
+    m_eventRegister = Event::NO_OP;
+    setNextEvent(Event::VARIABLE_TIME);
+  }
+};
 
-void Parser::onCue() {};
+void Parser::onCue() {
+  if (m_eventRegister != Event::CUE) {
+    m_eventRegister = Event::CUE;
+    setNextEvent(Event::VARIABLE_TIME);
+  } else {
+    auto buffer = m_scanner.scan(m_variableLength);
+    std::cout << "CUE" << std::endl;
+    std::cout << std::string_view(reinterpret_cast<char*>(buffer.data()),
+                                  m_variableLength)
+              << std::endl;
+    setState(State::EVENT_READ);
+    m_eventRegister = Event::NO_OP;
+    setNextEvent(Event::VARIABLE_TIME);
+  }
+};
 
-void Parser::onChannelPrefix() {};
+void Parser::onChannelPrefix() {
+  auto length = m_scanner.scan<uint8_t>();
+  if (length != 1) {
+    throw std::runtime_error("Length of channel prefix meta message must be 1");
+  }
+  auto channel = m_scanner.scan<uint8_t>();
+  std::cout << std::format("Meta channel prefix: {}", channel) << std::endl;
+  setState(State::EVENT_READ);
+  setNextEvent(Event::VARIABLE_TIME);
+};
 
 void Parser::onEndOfTrack() {
   auto length = m_scanner.scan<uint8_t>();
@@ -259,7 +352,16 @@ void Parser::onSetTempo() {
   setNextEvent(Event::VARIABLE_TIME);
 }
 
-void Parser::onSMPTEOffset() {};
+void Parser::onSMPTEOffset() {
+  auto length = m_scanner.scan<uint8_t>();
+  if (length != 5) {
+    throw std::runtime_error("Length of SMPTE offset meta event must be 5");
+  }
+  auto data = m_scanner.scan<5>();
+  std::cout << "SMPTE OFFSET EVENT" << std::endl;
+  setState(State::EVENT_READ);
+  setNextEvent(Event::VARIABLE_TIME);
+};
 
 void Parser::onTimeSignature() {
   auto length = m_scanner.scan<uint8_t>();
@@ -282,7 +384,18 @@ void Parser::onTimeSignature() {
   setNextEvent(Event::VARIABLE_TIME);
 }
 
-void Parser::onKeySignature() {};
+void Parser::onKeySignature() {
+  auto length = m_scanner.scan<uint8_t>();
+  if (length != 2) {
+    throw std::runtime_error(
+        "Length of the key signature meta event must be 2.");
+  }
+  auto sign = m_scanner.scan<int8_t>();
+  auto tonality = m_scanner.scan<uint8_t>();
+  std::cout << "Key Signature event" << std::endl;
+  setState(State::EVENT_READ);
+  setNextEvent(Event::VARIABLE_TIME);
+};
 
 void Parser::onMIDIControlChange() {
   uint8_t controllerNumber = m_scanner.scan<uint8_t>();

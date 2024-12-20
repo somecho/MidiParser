@@ -63,7 +63,7 @@ int main() {
   bytes.insert(bytes.end(), {0x0, 0xFF, 0x59, 0x02, 0x00, 0x00});
 
   // End Of Track
-  bytes.insert(bytes.end(), {0x0, 0xFF, 0x20, 0x01, 0x01});
+  bytes.insert(bytes.end(), {0x0, 0xFF, 0x2F, 0x00});
 
   std::ofstream file("data/test_examples/metamsgs.mid",
                      std::ios::out | std::ios::binary | std::ios::trunc);
