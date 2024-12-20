@@ -1,6 +1,5 @@
 #pragma once
 
-#include "MidiParser/MidiTrack.h"
 #ifdef WIN32
 #include <winsock.h>
 #else
@@ -14,6 +13,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "MidiFile.h"
+#include "MidiTrack.h"
 #include "Scanner.h"
 #include "enums.h"
 
@@ -29,7 +30,7 @@ class Parser {
  public:
   explicit Parser(const std::string& midiFilePath);
 
-  void parse();
+  MidiFile parse();
   void processEvent(Event event);
   State getState() const;
   Event getEventRegister() const;
@@ -54,6 +55,8 @@ class Parser {
   uint32_t m_variableLength;
   uint16_t m_trackCount;
   uint16_t m_numTracks;
+  uint16_t m_fileFormat;
+  uint16_t m_tickDivision;
   std::vector<MidiTrack> m_midiTracks;
 
   State m_state;

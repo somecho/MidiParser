@@ -1,9 +1,8 @@
 #include <cmath>
 #include <format>
-#include <iostream>
 #include <stdexcept>
-#include <string_view>
 
+#include "MidiFile.h"
 #include "Parser.h"
 #include "events.h"
 #include "tables.h"
@@ -24,7 +23,7 @@ Parser::Parser(const std::string& midiFilePath)
       m_scanner(midiFilePath),
       m_actions(bindActions(*this)) {}
 
-void Parser::parse() {
+MidiFile Parser::parse() {
   if (m_state != State::NEW) {
     throw std::runtime_error(
         "Not in a fresh state. Parser has already been used.");
@@ -32,6 +31,7 @@ void Parser::parse() {
   while (m_state != State::FINISHED) {
     processEvent(m_nextEvent);
   }
+  return MidiFile{m_fileFormat, m_numTracks, m_tickDivision, m_midiTracks};
 }
 
 void Parser::processEvent(Event event) {
@@ -89,6 +89,9 @@ void Parser::onFixedLength() {
   if (m_state == State::HEADER_ID_FOUND && length != 6) {
     throw std::runtime_error("The length of the header chunk must be 6.");
   }
+  if (m_state == State::TRACK_ID_FOUND) {
+    m_midiTracks.at(m_trackCount).length = length;
+  }
   auto nextEvent = m_state == State::TRACK_ID_FOUND ? Event::VARIABLE_TIME
                                                     : Event::FILE_FORMAT;
   setNextEvent(nextEvent);
@@ -96,7 +99,7 @@ void Parser::onFixedLength() {
 }
 
 void Parser::onFileFormat() {
-  auto fileFormat = ntohs(m_scanner.scan<uint16_t>());
+  m_fileFormat = ntohs(m_scanner.scan<uint16_t>());
   setState(State::FILE_FORMAT_FOUND);
   setNextEvent(Event::NUM_TRACKS);
 }
@@ -109,7 +112,7 @@ void Parser::onNumTracks() {
 }
 
 void Parser::onTicks() {
-  auto ticks = ntohs(m_scanner.scan<int16_t>());
+  m_tickDivision = ntohs(m_scanner.scan<int16_t>());
   setState(State::HEADER_CHUNK_READ);
   setNextEvent(Event::IDENTIFIER);
 }
