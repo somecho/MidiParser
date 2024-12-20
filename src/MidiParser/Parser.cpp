@@ -133,7 +133,7 @@ void Parser::onVariableTime() {
     m_variableLength = variableTo32(m_bytesRegister);
     m_bytesRegister.clear();
     setState(State::VARIABLE_TIME_READ);
-    if (m_eventRegister == Event::TEXT) {
+    if (TextEvents.find(m_eventRegister) != TextEvents.end()) {
       setNextEvent(m_eventRegister);
     } else {
       setNextEvent(Event::VARIABLE_TIME);

@@ -53,10 +53,20 @@ const std::set<std::pair<State, Event>> StateEvents{
 };
 
 const std::unordered_map<Event, State> MetaHandlers{
-    {Event::SET_TEMPO, State::META_SET_TEMPO_FOUND},
-    {Event::TIME_SIGNATURE, State::META_TIME_SIGNATURE_FOUND},
-    {Event::END_OF_TRACK, State::END_OF_TRACK_FOUND},
+    {Event::SEQUENCE_NUMBER, State::META_SEQUENCE_NUMBER_FOUND},
     {Event::TEXT, State::META_TEXT_FOUND},
+    {Event::COPYRIGHT_NOTICE, State::META_COPYRIGHT_NOTICE_FOUND},
+    {Event::TRACK_NAME, State::META_TRACK_NAME_FOUND},
+    {Event::INSTRUMENT_NAME, State::META_INSTRUMENT_NAME_FOUND},
+    {Event::LYRIC, State::META_LYRIC_FOUND},
+    {Event::MARKER, State::META_MARKER_FOUND},
+    {Event::CUE, State::META_CUE_FOUND},
+    {Event::CHANNEl_PREFIX, State::META_CHANNEL_PREFIX_FOUND},
+    {Event::END_OF_TRACK, State::END_OF_TRACK_FOUND},
+    {Event::SET_TEMPO, State::META_SET_TEMPO_FOUND},
+    {Event::SMPTE_OFFSET, State::META_SMPTE_OFFSET_FOUND},
+    {Event::TIME_SIGNATURE, State::META_TIME_SIGNATURE_FOUND},
+    {Event::KEY_SIGNATURE, State::META_KEY_SIGNATURE_FOUND},
 };
 
 const std::set<Event> MidiMessages{
@@ -182,5 +192,10 @@ std::unordered_map<Event, std::function<void()>> bindActions(Parser& parser) {
        }},
   };
 }
+
+const std::set<Event> TextEvents{Event::TEXT,       Event::COPYRIGHT_NOTICE,
+                                 Event::TRACK_NAME, Event::INSTRUMENT_NAME,
+                                 Event::LYRIC,      Event::MARKER,
+                                 Event::CUE};
 
 }  // namespace MidiParser
