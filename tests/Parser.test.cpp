@@ -10,8 +10,26 @@ TEST(ParserNegativeTests, OpeningInvalidFile) {
   EXPECT_THROW(MidiParser::Parser("/path/to/nowhere"), std::runtime_error);
 }
 
-TEST(ParsingCompleteMidiFile, Multitrack) {
+TEST(ParserParsesCompleteMidiFile, queen) {
   auto parser = MidiParser::Parser(std::string(EXAMPLES_DIR) + "/queen.mid");
+  parser.parse();
+  EXPECT_EQ(parser.getState(), MidiParser::State::FINISHED);
+}
+
+TEST(ParserParsesCompleteMidiFile, Mozart) {
+  auto parser = MidiParser::Parser(std::string(EXAMPLES_DIR) + "/mozart.mid");
+  parser.parse();
+  EXPECT_EQ(parser.getState(), MidiParser::State::FINISHED);
+}
+
+TEST(ParserParsesCompleteMidiFile, Debussy) {
+  auto parser = MidiParser::Parser(std::string(EXAMPLES_DIR) + "/debussy.mid");
+  parser.parse();
+  EXPECT_EQ(parser.getState(), MidiParser::State::FINISHED);
+}
+
+TEST(ParserParsesCompleteMidiFile, Mahler) {
+  auto parser = MidiParser::Parser(std::string(EXAMPLES_DIR) + "/mahler.mid");
   parser.parse();
   EXPECT_EQ(parser.getState(), MidiParser::State::FINISHED);
 }

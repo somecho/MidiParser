@@ -31,10 +31,13 @@ const std::set<std::pair<State, Event>> StateEvents{
     {State::META_CUE_FOUND, Event::CUE},
     {State::META_CUE_FOUND, Event::VARIABLE_TIME},
     {State::META_CHANNEL_PREFIX_FOUND, Event::CHANNEl_PREFIX},
+    {State::META_MIDI_PORT_FOUND, Event::MIDI_PORT},
     {State::META_SET_TEMPO_FOUND, Event::SET_TEMPO},
     {State::META_SMPTE_OFFSET_FOUND, Event::SMPTE_OFFSET},
     {State::META_TIME_SIGNATURE_FOUND, Event::TIME_SIGNATURE},
     {State::META_KEY_SIGNATURE_FOUND, Event::KEY_SIGNATURE},
+    {State::META_SEQUENCER_SPECIFIC_FOUND, Event::VARIABLE_TIME},
+    {State::META_SEQUENCER_SPECIFIC_FOUND, Event::SEQUENCER_SPECIFIC},
     {State::VARIABLE_TIME_READ, Event::VARIABLE_TIME},
     {State::VARIABLE_TIME_READ, Event::TEXT},
     {State::VARIABLE_TIME_READ, Event::COPYRIGHT_NOTICE},
@@ -44,6 +47,7 @@ const std::set<std::pair<State, Event>> StateEvents{
     {State::VARIABLE_TIME_READ, Event::MARKER},
     {State::VARIABLE_TIME_READ, Event::CUE},
     {State::VARIABLE_TIME_READ, Event::MIDI},
+    {State::VARIABLE_TIME_READ, Event::SEQUENCER_SPECIFIC},
     {State::READING_VARIABLE_TIME, Event::VARIABLE_TIME},
     {State::MIDI_FOUND, Event::MIDI_NOTE_OFF},
     {State::MIDI_FOUND, Event::MIDI_NOTE_ON},
@@ -68,11 +72,13 @@ const std::unordered_map<Event, State> MetaHandlers{
     {Event::MARKER, State::META_MARKER_FOUND},
     {Event::CUE, State::META_CUE_FOUND},
     {Event::CHANNEl_PREFIX, State::META_CHANNEL_PREFIX_FOUND},
+    {Event::MIDI_PORT, State::META_MIDI_PORT_FOUND},
     {Event::END_OF_TRACK, State::END_OF_TRACK_FOUND},
     {Event::SET_TEMPO, State::META_SET_TEMPO_FOUND},
     {Event::SMPTE_OFFSET, State::META_SMPTE_OFFSET_FOUND},
     {Event::TIME_SIGNATURE, State::META_TIME_SIGNATURE_FOUND},
     {Event::KEY_SIGNATURE, State::META_KEY_SIGNATURE_FOUND},
+    {Event::SEQUENCER_SPECIFIC, State::META_SEQUENCER_SPECIFIC_FOUND},
 };
 
 const std::set<Event> MidiMessages{
@@ -120,6 +126,10 @@ std::unordered_map<Event, std::function<void()>> bindActions(Parser& parser) {
        [&parser]() {
          parser.onChannelPrefix();
        }},
+      {Event::MIDI_PORT,
+       [&parser]() {
+         parser.onMIDIPort();
+       }},
       {Event::END_OF_TRACK,
        [&parser]() {
          parser.onEndOfTrack();
@@ -139,6 +149,10 @@ std::unordered_map<Event, std::function<void()>> bindActions(Parser& parser) {
       {Event::KEY_SIGNATURE,
        [&parser]() {
          parser.onKeySignature();
+       }},
+      {Event::SEQUENCER_SPECIFIC,
+       [&parser]() {
+         parser.onSequencerSpecific();
        }},
       {Event::IDENTIFIER,
        [&parser]() {
@@ -202,6 +216,6 @@ std::unordered_map<Event, std::function<void()>> bindActions(Parser& parser) {
 const std::set<Event> TextEvents{Event::TEXT,       Event::COPYRIGHT_NOTICE,
                                  Event::TRACK_NAME, Event::INSTRUMENT_NAME,
                                  Event::LYRIC,      Event::MARKER,
-                                 Event::CUE};
+                                 Event::CUE,        Event::SEQUENCER_SPECIFIC};
 
 }  // namespace MidiParser

@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstdint>
 #include <format>
 #include <stdexcept>
 
@@ -170,6 +171,40 @@ void Parser::onVariableTime() {
     return setNextEvent(Event::VARIABLE_TIME);
   }
 
+  // unsupported System messages
+  static std::set<uint8_t> skip{0b11110100, 0b11110001, 0b11110101, 0b11110110,
+                                0b11111000, 0b11111001, 0b11111010, 0b11111011,
+                                0b11111100, 0b11111101, 0b11111110, 0b11111111};
+
+  if (skip.contains(byte)) {  // skip
+    return setNextEvent(Event::VARIABLE_TIME);
+  }
+
+  if (byte == 0b11110011) {  // skip 1 byte
+    m_scanner.scan<1>();
+    return setNextEvent(Event::VARIABLE_TIME);
+  }
+  if (byte == 0xF2) {  // skip 2 bytes
+    m_scanner.scan<2>();
+    return setNextEvent(Event::VARIABLE_TIME);
+  }
+
+  if (byte == 0b11110000) {  // skip system exclusive meta messages
+    auto curr = m_scanner.scan<uint8_t>();
+    while (curr != 0b11110111) {
+      curr = m_scanner.scan<uint8_t>();
+    }
+    return setNextEvent(Event::VARIABLE_TIME);
+  }
+
+  if (byte == 0xF7) {  // skip sysex messages
+    auto curr = m_scanner.scan<uint8_t>();
+    while (curr != 0xF7) {
+      curr = m_scanner.scan<uint8_t>();
+    }
+    return setNextEvent(Event::VARIABLE_TIME);
+  }
+
   throw std::runtime_error(
       "Invalid parser state. Something is wrong reading variable time.");
 }
@@ -177,6 +212,14 @@ void Parser::onVariableTime() {
 void Parser::onMetaType() {
   auto typeByte = m_scanner.scan<uint8_t>();
   auto metaType = Event(typeByte);
+
+  if (typeByte == 0x7F) {
+    // 0x7F is the same as MIDI Note Off
+    setState(State::META_SEQUENCER_SPECIFIC_FOUND);
+    setNextEvent(Event::SEQUENCER_SPECIFIC);
+    return;
+  }
+
   if (MetaHandlers.find(metaType) == MetaHandlers.end()) {
     throw std::runtime_error("Unrecognized meta event!");
   } else {
@@ -339,6 +382,19 @@ void Parser::onChannelPrefix() {
       .events.emplace_back(MetaChannelEvent{m_deltaTimeRegister, channel});
 };
 
+void Parser::onMIDIPort() {
+  auto length = m_scanner.scan<uint8_t>();
+  if (length != 1) {
+    throw std::runtime_error("Length of midi port meta message must be 1");
+  }
+  auto port = m_scanner.scan<uint8_t>();
+  setState(State::EVENT_READ);
+  setNextEvent(Event::VARIABLE_TIME);
+  // TODO
+  /* m_midiTracks.at(m_trackCount) */
+  /*     .events.emplace_back(MetaChannelEvent{m_deltaTimeRegister, channel}); */
+}
+
 void Parser::onEndOfTrack() {
   auto length = m_scanner.scan<uint8_t>();
   if (length != 0) {
@@ -411,6 +467,18 @@ void Parser::onKeySignature() {
       .events.emplace_back(
           MetaKeySignatureEvent{m_deltaTimeRegister, sign, mode});
 };
+
+void Parser::onSequencerSpecific() {
+  if (m_eventRegister != Event::SEQUENCER_SPECIFIC) {
+    m_eventRegister = Event::SEQUENCER_SPECIFIC;
+    setNextEvent(Event::VARIABLE_TIME);
+  } else {
+    auto buffer = m_scanner.scan(m_variableLength);
+    setState(State::EVENT_READ);
+    m_eventRegister = Event::NO_OP;
+    setNextEvent(Event::VARIABLE_TIME);
+  }
+}
 
 void Parser::onMIDIControlChange() {
   uint8_t controllerNumber = m_scanner.scan<uint8_t>();

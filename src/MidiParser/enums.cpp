@@ -42,6 +42,8 @@ std::string toString(State s) {
       return "State::META_CUE_FOUND";
     case MidiParser::State::META_CHANNEL_PREFIX_FOUND:
       return "State::META_CHANNEL_PREFIX_FOUND";
+    case MidiParser::State::META_MIDI_PORT_FOUND:
+      return "State::META_MIDI_PORT_FOUND";
     case MidiParser::State::END_OF_TRACK_FOUND:
       return "State::END_OF_TRACK_FOUND";
     case MidiParser::State::META_SET_TEMPO_FOUND:
@@ -52,6 +54,8 @@ std::string toString(State s) {
       return "State::META_TIME_SIGNATURE_FOUND";
     case MidiParser::State::META_KEY_SIGNATURE_FOUND:
       return "State::META_KEY_SIGNATURE_FOUND";
+    case MidiParser::State::META_SEQUENCER_SPECIFIC_FOUND:
+      return "State::META_KEY_SEQUENCER_SPECIFIC_FOUND";
     case MidiParser::State::EVENT_READ:
       return "State::EVENT_READ";
     case MidiParser::State::TRACK_READ:
@@ -85,6 +89,8 @@ std::string toString(Event e) {
       return "Event::CUE";
     case MidiParser::Event::CHANNEl_PREFIX:
       return "Event::CHANNEl_PREFIX";
+    case MidiParser::Event::MIDI_PORT:
+      return "Event::MIDI_PORT";
     case MidiParser::Event::END_OF_TRACK:
       return "Event::END_OF_TRACK";
     case MidiParser::Event::SET_TEMPO:
@@ -95,6 +101,8 @@ std::string toString(Event e) {
       return "Event::TIME_SIGNATURE";
     case MidiParser::Event::KEY_SIGNATURE:
       return "Event::KEY_SIGNATURE";
+    case MidiParser::Event::SEQUENCER_SPECIFIC:
+      return "Event::SEQUENCER_SPECIFIC";
     case MidiParser::Event::IDENTIFIER:
       return "Event::IDENTIFIER";
     case MidiParser::Event::FIXED_LENGTH:

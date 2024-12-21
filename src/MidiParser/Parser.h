@@ -89,11 +89,13 @@ class Parser {
   void onMarker();
   void onCue();
   void onChannelPrefix();
+  void onMIDIPort();
   void onEndOfTrack();
   void onSetTempo();
   void onSMPTEOffset();
   void onTimeSignature();
   void onKeySignature();
+  void onSequencerSpecific();
 
   // Midi Event Handlers
 
