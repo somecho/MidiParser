@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <variant>
+#include <vector>
 
 namespace MidiParser {
 
@@ -50,8 +51,6 @@ struct BaseMetaTextEvent : BaseTrackEvent {
   std::string text;
 };
 
-struct MetaTextEvent : BaseMetaTextEvent {};
-
 struct MetaCopyrightNoticeEvent : BaseMetaTextEvent {};
 
 struct MetaTrackNameEvent : BaseMetaTextEvent {};
@@ -97,17 +96,15 @@ struct MetaSequenceNumberEvent : BaseTrackEvent {
   uint16_t number;
 };
 
-using MIDIEvent =
-    std::variant<MIDIControlChangeEvent, MIDINoteOnEvent, MIDINoteOffEvent,
-                 MIDIPolyAftertouchEvent, MIDIProgramChangeEvent,
-                 MIDIAftertouchEvent, MIDIPitchBendEvent>;
+struct MetaEndOfTrackEvent {
+  uint32_t deltaTime;
+};
 
-using MetaEvent = std::variant<
-    MetaTextEvent, MetaCopyrightNoticeEvent, MetaInstrumentNameEvent,
-    MetaTrackNameEvent, MetaLyricEvent, MetaMarkerEvent, MetaCueEvent,
-    MetaChannelEvent, MetaSetTempoEvent, MetaSMPTEOffsetEvent,
-    MetaTimeSignatureEvent, MetaKeySignatureEvent, MetaSequenceNumberEvent>;
+struct MetaTextEvent {
+  uint32_t deltaTime;
+  std::vector<uint8_t> data;
+};
 
-using TrackEvent = std::variant<MIDIEvent, MetaEvent>;
+using TrackEvent = std::variant<MetaEndOfTrackEvent, MetaTextEvent>;
 
 }  // namespace MidiParser

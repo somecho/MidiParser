@@ -6,7 +6,9 @@
 #include <set>
 #include <stack>
 #include <stdexcept>
+#include <variant>
 
+#include "Meta.hpp"
 #include "Parser.hpp"
 
 namespace MidiParser {
@@ -69,33 +71,25 @@ void Parser::parseTrackData() {
 
 void Parser::parseTrackData(std::vector<byte>& data) {
   std::vector<byte>::iterator it = data.begin();
+  std::vector<TrackEvent> trackEvents;
   bool endOfTrackFound = false;
   bool firstByteRead = false;
   uint8_t runningStatus = 0;
   uint8_t maskedRunning = runningStatus & 0b11110000;
   while (!endOfTrackFound) {
-
-    //FIND DELTA TIME
-    if (firstByteRead) {
-      readvlq(++it);
-    } else {
-      readvlq(it);
+    uint8_t deltaTime = firstByteRead ? readvlq(++it) : readvlq(it);
+    if (!firstByteRead) {
       firstByteRead = true;
     }
 
-    // CHECK WHAT EVENT
     uint8_t identifier = *++it;
     switch (identifier) {
-      case 0xFF: {
-        uint8_t metaType = *++it;
-        if (metaType == 0x2F) {
-          std::cout << "END OF TRACK" << std::endl;
+      case 0xFF: {  // Meta Event
+        auto e = readMetaEvent(it, deltaTime);
+        if (std::holds_alternative<MetaEndOfTrackEvent>(e)) {
           endOfTrackFound = true;
         }
-        std::cout << std::format("META: {:02X}", metaType) << std::endl;
-        uint32_t length = readvlq(++it);
-        std::cout << length << std::endl;
-        std::advance(it, length);
+        trackEvents.emplace_back(e);
         break;
       }  // case 0xFF
       case 0xF7: {
@@ -185,5 +179,22 @@ uint32_t Parser::readvlq(std::vector<byte>::iterator& it) {
   }
   return vlqto32(s);
 }  // Parser::readDeltaTime
+
+TrackEvent Parser::readMetaEvent(std::vector<byte>::iterator& it,
+                                 uint32_t deltaTime) {
+  uint8_t metaType = *++it;
+  uint32_t length = 1;
+  switch (static_cast<Meta>(metaType)) {
+    case Meta::END_OF_TRACK: {
+      std::advance(it, 1);
+      auto e = MetaEndOfTrackEvent{deltaTime};
+      return e;
+    }
+    default:
+      length = readvlq(++it);
+      std::advance(it, length);
+  }
+  return MetaTextEvent{};  // TODO
+}
 
 }  // namespace MidiParser
