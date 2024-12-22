@@ -76,11 +76,10 @@ void Parser::parseTrackData(std::vector<byte>& data) {
   while (!endOfTrackFound) {
 
     //FIND DELTA TIME
-
     if (firstByteRead) {
-      readDeltaTime(++it);
+      readvlq(++it);
     } else {
-      readDeltaTime(it);
+      readvlq(it);
       firstByteRead = true;
     }
 
@@ -94,22 +93,7 @@ void Parser::parseTrackData(std::vector<byte>& data) {
           endOfTrackFound = true;
         }
         std::cout << std::format("META: {:02X}", metaType) << std::endl;
-        uint32_t length = 0;
-        bool lenFound = false;
-        std::stack<uint8_t> s;
-        while (!lenFound) {
-          uint8_t b = *++it;
-          s.push(b);
-          if ((b & 0b10000000) == 0x0) {
-            lenFound = true;
-            break;
-          }
-        }
-        const auto size = s.size();
-        for (int i = 0; i < size; i++) {
-          length |= (s.top() & 0b01111111) << (7 * i);
-          s.pop();
-        }
+        uint32_t length = readvlq(++it);
         std::cout << length << std::endl;
         std::advance(it, length);
         break;
@@ -191,11 +175,15 @@ void Parser::parseTrackData(std::vector<byte>& data) {
   assert(++it == data.end());
 }  // Parser::parseTrackData
 
-void Parser::readDeltaTime(std::vector<byte>::iterator& it) {
+uint32_t Parser::readvlq(std::vector<byte>::iterator& it) {
+  std::stack<byte> s;
   uint8_t currByte = *it;
+  s.push(currByte);
   while ((currByte & 0b10000000) != 0x0) {
     currByte = *++it;
+    s.push(currByte);
   }
+  return vlqto32(s);
 }  // Parser::readDeltaTime
 
 }  // namespace MidiParser
