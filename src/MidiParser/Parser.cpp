@@ -1,6 +1,7 @@
 #include <netinet/in.h>
 #include <format>
 #include <iostream>
+#include <iterator>
 #include <set>
 #include <stack>
 #include <stdexcept>
@@ -65,9 +66,10 @@ void Parser::parseTrackData() {
 
 }  // Parser::parseTrackData
 
-void Parser::parseTrackData(const std::vector<byte>& data) {
-  size_t curr = 0;
+void Parser::parseTrackData(std::vector<byte>& data) {
+  std::vector<byte>::iterator it = data.begin();
   bool endOfTrackFound = false;
+  bool firstByteRead = false;
   uint8_t runningStatus = 0;
   uint8_t maskedRunning = runningStatus & 0b11110000;
   while (!endOfTrackFound) {
@@ -76,41 +78,37 @@ void Parser::parseTrackData(const std::vector<byte>& data) {
 
     bool deltaFound = false;
     while (!deltaFound) {
-      uint8_t currByte = data[curr];
+      uint8_t currByte = firstByteRead ? *++it : *it;
+      if (!firstByteRead) {
+        firstByteRead = true;
+      }
       uint8_t masked = currByte & 0b10000000;
       bool isMSBSet = masked != 0x0;
       if (!isMSBSet) {
         deltaFound = true;
       }
-      curr++;
     }
 
     // CHECK WHAT EVENT
-    uint8_t identifier = data[curr];
-    curr++;
+    uint8_t identifier = *++it;
     switch (identifier) {
       case 0xFF: {
-        uint8_t metaType = data[curr];
+        uint8_t metaType = *++it;
         if (metaType == 0x2F) {
           std::cout << "END OF TRACK" << std::endl;
           endOfTrackFound = true;
         }
         std::cout << std::format("META: {:02X}", metaType) << std::endl;
-        curr++;
         uint32_t length = 0;
         bool lenFound = false;
-        /* size_t j = 0; */
         std::stack<uint8_t> s;
         while (!lenFound) {
-          uint8_t b = data[curr];
+          uint8_t b = *++it;
           s.push(b);
-          /* length |= b << (j * 7); */
           if ((b & 0b10000000) == 0x0) {
             lenFound = true;
-            curr++;
             break;
           }
-          curr++;
         }
         const auto size = s.size();
         for (int i = 0; i < size; i++) {
@@ -118,27 +116,23 @@ void Parser::parseTrackData(const std::vector<byte>& data) {
           s.pop();
         }
         std::cout << length << std::endl;
-        curr += length;
+        std::advance(it, length);
         break;
       }  // case 0xFF
       case 0xF7: {
         std::cout << "SYSEX" << std::endl;
-        uint8_t next = data[curr];
+        uint8_t next = *++it;
         while (next != 0xF7) {
-          curr++;
-          next = data[curr];
+          next = *++it;
         }
-        curr++;
         break;
       }
       case 0xF0: {
         std::cout << "SYSEX" << std::endl;
-        uint8_t next = data[curr];
+        uint8_t next = *++it;
         while (next != 0xF7) {
-          curr++;
-          next = data[curr];
+          next = *++it;
         }
-        curr++;
         break;
       }
       default:  // find midi
@@ -161,14 +155,13 @@ void Parser::parseTrackData(const std::vector<byte>& data) {
         auto masked = b & 0b11110000;
         if (noLength.contains(b)) {
           std::cout << "MIDI skip" << std::endl;
-          /* curr++; */
           runningStatus = identifier;
           maskedRunning = runningStatus & 0b11110000;
           break;
         }
         if (single.contains(b) || single.contains(masked)) {
           std::cout << "MIDI skip 1" << std::endl;
-          curr += 1;
+          std::advance(it, 1);
           runningStatus = identifier;
           maskedRunning = runningStatus & 0b11110000;
           break;
@@ -176,14 +169,14 @@ void Parser::parseTrackData(const std::vector<byte>& data) {
 
         if (two.contains(b) || two.contains(masked)) {
           std::cout << "MIDI skip 2" << std::endl;
-          curr += 2;
+          std::advance(it, 2);
           runningStatus = identifier;
           maskedRunning = runningStatus & 0b11110000;
           break;
         }
         // no status byte encountered
         if (noLength.contains(runningStatus)) {
-          curr--;
+          std::advance(it, -1);
           break;
         }
         if (single.contains(runningStatus) || single.contains(maskedRunning)) {
@@ -191,7 +184,7 @@ void Parser::parseTrackData(const std::vector<byte>& data) {
         }
         if (two.contains(runningStatus) || two.contains(maskedRunning)) {
           std::cout << "MIDI" << std::endl;
-          curr += 1;
+          std::advance(it, 1);
           break;
         }
         throw std::runtime_error("SOMETHING WRONG");
