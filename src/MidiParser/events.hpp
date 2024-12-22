@@ -88,7 +88,8 @@ struct MetaCueEvent {
   std::vector<uint8_t> data;
 };
 
-struct MetaChannelEvent : BaseTrackEvent {
+struct MetaChannelPrefixEvent {
+  uint32_t deltaTime;
   uint8_t channel;
 };
 
@@ -128,6 +129,7 @@ using TrackEvent = std::variant<  // Meta Events
     MetaLyricEvent,               //
     MetaMarkerEvent,              //
     MetaCueEvent,                 //
-    MetaEndOfTrackEvent>;
+    MetaEndOfTrackEvent,          //
+    MetaChannelPrefixEvent>;
 
 }  // namespace MidiParser

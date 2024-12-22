@@ -6,6 +6,7 @@
 #include <set>
 #include <stack>
 #include <stdexcept>
+#include <string>
 #include <variant>
 
 #include "Meta.hpp"
@@ -175,58 +176,59 @@ TrackEvent Parser::readMetaEvent(std::vector<byte>::iterator& it,
                                  uint32_t deltaTime) {
   uint8_t metaType = *++it;
   uint32_t length = readvlq(++it);
-  std::advance(it, length);
   switch (static_cast<Meta>(metaType)) {
     case Meta::SEQUENCE_NUMBER: {
       if (length == 0) {
         return MetaSequenceNumberEvent{.deltaTime = deltaTime,
                                        .numberOmmited = true};
       } else {
-        uint16_t num;
-        m_file.read(reinterpret_cast<char*>(&num), sizeof(num));
+        uint16_t num = 0 | (*++it) << 8 | *++it;
         return MetaSequenceNumberEvent{.deltaTime = deltaTime,
                                        .number = ntohs(num),
                                        .numberOmmited = false};
       }
     }
     case Meta::TEXT: {
-      std::vector<byte> data(length);
-      m_file.read(reinterpret_cast<char*>(data.data()), data.size());
+      std::vector<byte> data(++it, (it + length + 1));
+      std::advance(it, length - 1);
       return MetaTextEvent{.deltaTime = deltaTime, .data = data};
     }
     case Meta::COPYRIGHT_NOTICE: {
-      std::vector<byte> data(length);
-      m_file.read(reinterpret_cast<char*>(data.data()), data.size());
+      std::vector<byte> data(++it, (it + length + 1));
+      std::advance(it, length - 1);
       return MetaCopyrightNoticeEvent{.deltaTime = deltaTime, .data = data};
     }
     case Meta::TRACK_NAME: {
-      std::vector<byte> data(length);
-      m_file.read(reinterpret_cast<char*>(data.data()), data.size());
+      std::vector<byte> data(++it, (it + length + 1));
+      std::advance(it, length - 1);
       return MetaTrackNameEvent{.deltaTime = deltaTime, .data = data};
     }
     case Meta::INSTRUMENT_NAME: {
-      std::vector<byte> data(length);
-      m_file.read(reinterpret_cast<char*>(data.data()), data.size());
+      std::vector<byte> data(++it, (it + length + 1));
+      std::advance(it, length - 1);
       return MetaInstrumentNameEvent{.deltaTime = deltaTime, .data = data};
     }
     case Meta::LYRIC: {
-      std::vector<byte> data(length);
-      m_file.read(reinterpret_cast<char*>(data.data()), data.size());
+      std::vector<byte> data(++it, (it + length + 1));
+      std::advance(it, length - 1);
       return MetaLyricEvent{.deltaTime = deltaTime, .data = data};
     }
     case Meta::MARKER: {
-      std::vector<byte> data(length);
-      m_file.read(reinterpret_cast<char*>(data.data()), data.size());
+      std::vector<byte> data(++it, (it + length + 1));
+      std::advance(it, length - 1);
       return MetaMarkerEvent{.deltaTime = deltaTime, .data = data};
     }
     case Meta::CUE: {
-      std::vector<byte> data(length);
-      m_file.read(reinterpret_cast<char*>(data.data()), data.size());
+      std::vector<byte> data(++it, (it + length + 1));
+      std::advance(it, length - 1);
       return MetaCueEvent{.deltaTime = deltaTime, .data = data};
     }
+    case Meta::CHANNEl_PREFIX:
+      return MetaChannelPrefixEvent{.deltaTime = deltaTime, .channel = *++it};
     case Meta::END_OF_TRACK:
       return MetaEndOfTrackEvent{deltaTime};
     default:
+      std::advance(it, length);
       return MetaTextEvent{};  // TODO
   }
 }  // Parser::readMetaEvent
