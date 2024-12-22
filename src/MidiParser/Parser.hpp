@@ -34,8 +34,7 @@ class Parser {
   void parseTrackData(std::vector<byte>& data);
 
   uint32_t readvlq(std::vector<byte>::iterator& it) const;
-  TrackEvent readMetaEvent(std::vector<byte>::iterator& it,
-                           uint32_t deltaTime) const;
+  TrackEvent readMetaEvent(std::vector<byte>::iterator& it, uint32_t deltaTime);
   void readSysExEvent(std::vector<byte>::iterator& it) const;
 };
 

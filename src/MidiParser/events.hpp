@@ -91,9 +91,10 @@ struct MetaKeySignatureEvent : BaseTrackEvent {
   uint8_t mode;
 };
 
-struct MetaSequenceNumberEvent : BaseTrackEvent {
-  bool numberOmmited;
+struct MetaSequenceNumberEvent {
+  uint32_t deltaTime;
   uint16_t number;
+  bool numberOmmited;
 };
 
 struct MetaEndOfTrackEvent {
@@ -105,6 +106,7 @@ struct MetaTextEvent {
   std::vector<uint8_t> data;
 };
 
-using TrackEvent = std::variant<MetaEndOfTrackEvent, MetaTextEvent>;
+using TrackEvent = std::variant</*Meta Events*/ MetaSequenceNumberEvent,
+                                MetaTextEvent, MetaEndOfTrackEvent>;
 
 }  // namespace MidiParser

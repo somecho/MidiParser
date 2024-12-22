@@ -171,17 +171,36 @@ uint32_t Parser::readvlq(std::vector<byte>::iterator& it) const {
 }  // Parser::readDeltaTime
 
 TrackEvent Parser::readMetaEvent(std::vector<byte>::iterator& it,
-                                 uint32_t deltaTime) const {
+                                 uint32_t deltaTime) {
   uint8_t metaType = *++it;
   uint32_t length = 1;
   switch (static_cast<Meta>(metaType)) {
-    case Meta::END_OF_TRACK: {
-      std::advance(it, 1);
-      auto e = MetaEndOfTrackEvent{deltaTime};
-      return e;
+    case Meta::SEQUENCE_NUMBER: {
+      uint32_t length = readvlq(++it);
+      std::advance(it, length);
+      if (length == 0) {
+        return MetaSequenceNumberEvent{.deltaTime = deltaTime,
+                                       .numberOmmited = true};
+      } else {
+        uint16_t num;
+        m_file.read(reinterpret_cast<char*>(&num), sizeof(num));
+        return MetaSequenceNumberEvent{.deltaTime = deltaTime,
+                                       .number = ntohs(num),
+                                       .numberOmmited = false};
+      }
     }
+    case Meta::TEXT: {
+      uint32_t length = readvlq(++it);
+      std::vector<byte> data(length);
+      m_file.read(reinterpret_cast<char*>(data.data()), data.size());
+      std::advance(it, length);
+      return MetaTextEvent{.deltaTime = deltaTime, .data = data};
+    }
+    case Meta::END_OF_TRACK:
+      std::advance(it, 1);  // skip the length byte
+      return MetaEndOfTrackEvent{deltaTime};
     default:
-      length = readvlq(++it);
+      uint32_t length = readvlq(++it);
       std::advance(it, length);
   }
   return MetaTextEvent{};  // TODO
