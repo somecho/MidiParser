@@ -1,4 +1,5 @@
 #include <netinet/in.h>
+#include <cassert>
 #include <format>
 #include <iostream>
 #include <iterator>
@@ -76,17 +77,11 @@ void Parser::parseTrackData(std::vector<byte>& data) {
 
     //FIND DELTA TIME
 
-    bool deltaFound = false;
-    while (!deltaFound) {
-      uint8_t currByte = firstByteRead ? *++it : *it;
-      if (!firstByteRead) {
-        firstByteRead = true;
-      }
-      uint8_t masked = currByte & 0b10000000;
-      bool isMSBSet = masked != 0x0;
-      if (!isMSBSet) {
-        deltaFound = true;
-      }
+    if (firstByteRead) {
+      readDeltaTime(++it);
+    } else {
+      readDeltaTime(it);
+      firstByteRead = true;
     }
 
     // CHECK WHAT EVENT
@@ -193,7 +188,14 @@ void Parser::parseTrackData(std::vector<byte>& data) {
     }
   }
   std::cout << "Finished parsing track" << std::endl;
-
+  assert(++it == data.end());
 }  // Parser::parseTrackData
+
+void Parser::readDeltaTime(std::vector<byte>::iterator& it) {
+  uint8_t currByte = *it;
+  while ((currByte & 0b10000000) != 0x0) {
+    currByte = *++it;
+  }
+}  // Parser::readDeltaTime
 
 }  // namespace MidiParser

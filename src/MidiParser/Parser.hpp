@@ -29,6 +29,7 @@ class Parser {
   void readTrackData();
   void parseTrackData();
   void parseTrackData(std::vector<byte>& data);
+  void readDeltaTime(std::vector<byte>::iterator& it);
 };
 
 }  // namespace MidiParser
