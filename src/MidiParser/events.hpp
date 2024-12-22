@@ -47,21 +47,46 @@ struct MIDIPitchBendEvent : BaseMidiEvent {
   uint8_t value;
 };
 
-struct BaseMetaTextEvent : BaseTrackEvent {
-  std::string text;
+struct MetaSequenceNumberEvent {
+  uint32_t deltaTime;
+  uint16_t number;
+  bool numberOmmited;
 };
 
-struct MetaCopyrightNoticeEvent : BaseMetaTextEvent {};
+struct MetaTextEvent {
+  uint32_t deltaTime;
+  std::vector<uint8_t> data;
+};
 
-struct MetaTrackNameEvent : BaseMetaTextEvent {};
+struct MetaCopyrightNoticeEvent {
+  uint32_t deltaTime;
+  std::vector<uint8_t> data;
+};
 
-struct MetaInstrumentNameEvent : BaseMetaTextEvent {};
+struct MetaTrackNameEvent {
+  uint32_t deltaTime;
+  std::vector<uint8_t> data;
+};
 
-struct MetaLyricEvent : BaseMetaTextEvent {};
+struct MetaInstrumentNameEvent {
+  uint32_t deltaTime;
+  std::vector<uint8_t> data;
+};
 
-struct MetaMarkerEvent : BaseMetaTextEvent {};
+struct MetaLyricEvent {
+  uint32_t deltaTime;
+  std::vector<uint8_t> data;
+};
 
-struct MetaCueEvent : BaseMetaTextEvent {};
+struct MetaMarkerEvent {
+  uint32_t deltaTime;
+  std::vector<uint8_t> data;
+};
+
+struct MetaCueEvent {
+  uint32_t deltaTime;
+  std::vector<uint8_t> data;
+};
 
 struct MetaChannelEvent : BaseTrackEvent {
   uint8_t channel;
@@ -90,23 +115,19 @@ struct MetaKeySignatureEvent : BaseTrackEvent {
   int8_t signature;
   uint8_t mode;
 };
-
-struct MetaSequenceNumberEvent {
-  uint32_t deltaTime;
-  uint16_t number;
-  bool numberOmmited;
-};
-
 struct MetaEndOfTrackEvent {
   uint32_t deltaTime;
 };
 
-struct MetaTextEvent {
-  uint32_t deltaTime;
-  std::vector<uint8_t> data;
-};
-
-using TrackEvent = std::variant</*Meta Events*/ MetaSequenceNumberEvent,
-                                MetaTextEvent, MetaEndOfTrackEvent>;
+using TrackEvent = std::variant<  // Meta Events
+    MetaSequenceNumberEvent,      //
+    MetaTextEvent,                //
+    MetaCopyrightNoticeEvent,     //
+    MetaTrackNameEvent,           //
+    MetaInstrumentNameEvent,      //
+    MetaLyricEvent,               //
+    MetaMarkerEvent,              //
+    MetaCueEvent,                 //
+    MetaEndOfTrackEvent>;
 
 }  // namespace MidiParser
