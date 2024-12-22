@@ -1,5 +1,6 @@
 #include <netinet/in.h>
 #include <cassert>
+#include <cstdint>
 #include <format>
 #include <iostream>
 #include <iterator>
@@ -225,11 +226,40 @@ TrackEvent Parser::readMetaEvent(std::vector<byte>::iterator& it,
     }
     case Meta::CHANNEl_PREFIX:
       return MetaChannelPrefixEvent{.deltaTime = deltaTime, .channel = *++it};
+    case Meta::MIDI_PORT:
+      return MetaMIDIPortEvent{.deltaTime = deltaTime, .port = *++it};
     case Meta::END_OF_TRACK:
       return MetaEndOfTrackEvent{deltaTime};
+    case Meta::SET_TEMPO:
+      return MetaSetTempoEvent{
+          .deltaTime = deltaTime,
+          .tempo = uint32_t(0 | (*++it << 16) | (*++it << 8) | *++it)};
+    case Meta::SMPTE_OFFSET:
+      return MetaSMPTEOffsetEvent{.deltaTime = deltaTime,
+                                  .hours = *++it,
+                                  .minutes = *++it,
+                                  .seconds = *++it,
+                                  .frames = *++it,
+                                  .subframes = *++it};
+    case Meta::TIME_SIGNATURE:
+      return MetaTimeSignatureEvent{.deltaTime = deltaTime,
+                                    .numerator = *++it,
+                                    .denominator = *++it,
+                                    .clocksPerClick = *++it,
+                                    .quarterDivision = *++it};
+    case Meta::KEY_SIGNATURE:
+      return MetaKeySignatureEvent{.deltaTime = deltaTime,
+                                   .signature = static_cast<int8_t>(*++it),
+                                   .mode = *++it};
+
+    case Meta::SEQUENCER_SPECIFIC: {
+      std::vector<byte> data(++it, (it + length + 1));
+      std::advance(it, length - 1);
+      return MetaSequencerSpecificEvent{.deltaTime = deltaTime, .data = data};
+    }
     default:
-      std::advance(it, length);
-      return MetaTextEvent{};  // TODO
+      throw std::runtime_error(
+          std::format("Unrecognized meta event: {:02x}", metaType));
   }
 }  // Parser::readMetaEvent
 

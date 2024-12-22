@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
 #include <variant>
 #include <vector>
 
@@ -93,11 +92,18 @@ struct MetaChannelPrefixEvent {
   uint8_t channel;
 };
 
-struct MetaSetTempoEvent : BaseTrackEvent {
+struct MetaMIDIPortEvent {
+  uint32_t deltaTime;
+  uint8_t port;
+};
+
+struct MetaSetTempoEvent {
+  uint32_t deltaTime;
   uint32_t tempo;
 };
 
-struct MetaSMPTEOffsetEvent : BaseTrackEvent {
+struct MetaSMPTEOffsetEvent {
+  uint32_t deltaTime;
   uint8_t hours;
   uint8_t minutes;
   uint8_t seconds;
@@ -105,19 +111,27 @@ struct MetaSMPTEOffsetEvent : BaseTrackEvent {
   uint8_t subframes;
 };
 
-struct MetaTimeSignatureEvent : BaseTrackEvent {
+struct MetaTimeSignatureEvent {
+  uint32_t deltaTime;
   uint8_t numerator;
   uint8_t denominator;
   uint8_t clocksPerClick;
   uint8_t quarterDivision;
 };
 
-struct MetaKeySignatureEvent : BaseTrackEvent {
+struct MetaKeySignatureEvent {
+  uint32_t deltaTime;
   int8_t signature;
   uint8_t mode;
 };
+
 struct MetaEndOfTrackEvent {
   uint32_t deltaTime;
+};
+
+struct MetaSequencerSpecificEvent {
+  uint32_t deltaTime;
+  std::vector<uint8_t> data;
 };
 
 using TrackEvent = std::variant<  // Meta Events
@@ -130,6 +144,12 @@ using TrackEvent = std::variant<  // Meta Events
     MetaMarkerEvent,              //
     MetaCueEvent,                 //
     MetaEndOfTrackEvent,          //
-    MetaChannelPrefixEvent>;
+    MetaChannelPrefixEvent,       //
+    MetaMIDIPortEvent,            //
+    MetaSetTempoEvent,            //
+    MetaSMPTEOffsetEvent,         //
+    MetaTimeSignatureEvent,       //
+    MetaKeySignatureEvent,        //
+    MetaSequencerSpecificEvent>;
 
 }  // namespace MidiParser
