@@ -29,10 +29,14 @@ class Parser {
 
   void readHeaderData();
   void readTrackData();
+
   void parseTrackData();
   void parseTrackData(std::vector<byte>& data);
-  uint32_t readvlq(std::vector<byte>::iterator& it);
-  TrackEvent readMetaEvent(std::vector<byte>::iterator& it, uint32_t deltaTime);
+
+  uint32_t readvlq(std::vector<byte>::iterator& it) const;
+  TrackEvent readMetaEvent(std::vector<byte>::iterator& it,
+                           uint32_t deltaTime) const;
+  void readSysExEvent(std::vector<byte>::iterator& it) const;
 };
 
 }  // namespace MidiParser

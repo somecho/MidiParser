@@ -91,23 +91,13 @@ void Parser::parseTrackData(std::vector<byte>& data) {
         }
         trackEvents.emplace_back(e);
         break;
-      }  // case 0xFF
-      case 0xF7: {
-        std::cout << "SYSEX" << std::endl;
-        uint8_t next = *++it;
-        while (next != 0xF7) {
-          next = *++it;
-        }
-        break;
       }
-      case 0xF0: {
-        std::cout << "SYSEX" << std::endl;
-        uint8_t next = *++it;
-        while (next != 0xF7) {
-          next = *++it;
-        }
+      case 0xF0:  // SysEx Event
+        readSysExEvent(it);
         break;
-      }
+      case 0xF7:  // SysEx Event
+        readSysExEvent(it);
+        break;
       default:  // find midi
         static std::set<uint8_t> noLength{0b11110001, 0b11110100, 0b11110101,
                                           0b11110110, 0b11111000, 0b11111001,
@@ -169,7 +159,7 @@ void Parser::parseTrackData(std::vector<byte>& data) {
   assert(++it == data.end());
 }  // Parser::parseTrackData
 
-uint32_t Parser::readvlq(std::vector<byte>::iterator& it) {
+uint32_t Parser::readvlq(std::vector<byte>::iterator& it) const {
   std::stack<byte> s;
   uint8_t currByte = *it;
   s.push(currByte);
@@ -181,7 +171,7 @@ uint32_t Parser::readvlq(std::vector<byte>::iterator& it) {
 }  // Parser::readDeltaTime
 
 TrackEvent Parser::readMetaEvent(std::vector<byte>::iterator& it,
-                                 uint32_t deltaTime) {
+                                 uint32_t deltaTime) const {
   uint8_t metaType = *++it;
   uint32_t length = 1;
   switch (static_cast<Meta>(metaType)) {
@@ -195,6 +185,13 @@ TrackEvent Parser::readMetaEvent(std::vector<byte>::iterator& it,
       std::advance(it, length);
   }
   return MetaTextEvent{};  // TODO
-}
+}  // Parser::readMetaEvent
+
+void Parser::readSysExEvent(std::vector<byte>::iterator& it) const {
+  uint8_t next = *++it;
+  while (next != 0xF7) {
+    next = *++it;
+  }
+};  // Parser::readSysexEvent
 
 }  // namespace MidiParser
