@@ -47,15 +47,13 @@ void Parser::readHeaderData() {
 }  // Parser::readHeaderData
 
 void Parser::readTrackData() {
-  for (size_t i = 0; i < m_trackData.size(); i++) {
+  for (size_t i = 0; i < m_trackData.size(); ++i) {
     std::array<byte, 4> identifier;
     m_file.read(reinterpret_cast<char*>(identifier.data()), identifier.size());
-
     uint32_t trackDataLength;
     m_file.read(reinterpret_cast<char*>(&trackDataLength),
                 sizeof(trackDataLength));
     trackDataLength = ntohl(trackDataLength);
-
     auto& track = m_trackData.at(i);
     track.resize(trackDataLength);
     m_midiTracks.at(i).length = trackDataLength;
@@ -64,15 +62,16 @@ void Parser::readTrackData() {
 }  // Parser::readTrackData
 
 void Parser::parseTrackData() {
-  for (size_t i = 0; i < m_trackData.size(); i++) {
-    m_midiTracks.at(i).events = parseTrackData(m_trackData.at(i));
+  for (size_t i = 0; i < m_trackData.size(); ++i) {
+    parseTrackData(i);
   }
 
 }  // Parser::parseTrackData
 
-std::vector<TrackEvent> Parser::parseTrackData(std::vector<byte>& data) {
+std::vector<TrackEvent> Parser::parseTrackData(size_t trackIndex) {
+  auto& data = m_trackData.at(trackIndex);
   std::vector<byte>::iterator it = data.begin();
-  std::vector<TrackEvent> trackEvents;
+  auto& trackEvents = m_midiTracks.at(trackIndex).events;
   bool endOfTrackFound = false;
   bool firstByteRead = false;
   uint8_t runningStatus = 0;

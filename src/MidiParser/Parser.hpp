@@ -39,7 +39,7 @@ class Parser {
   void readTrackData();
 
   void parseTrackData();
-  std::vector<TrackEvent> parseTrackData(std::vector<byte>& data);
+  std::vector<TrackEvent> parseTrackData(size_t trackIndex);
 
   uint32_t readvlq(std::vector<byte>::iterator& it) const;
   TrackEvent readMetaEvent(std::vector<byte>::iterator& it,
