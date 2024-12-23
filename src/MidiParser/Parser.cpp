@@ -89,7 +89,6 @@ std::vector<TrackEvent> Parser::parseTrackData(std::vector<byte>& data) {
     if (!firstByteRead) {
       firstByteRead = true;
     }
-
     uint8_t identifier = *++it;
     switch (identifier) {
       case 0xFF: {  // Meta Event
@@ -105,21 +104,6 @@ std::vector<TrackEvent> Parser::parseTrackData(std::vector<byte>& data) {
         readSysExEvent(it, deltaTime);
         break;
       default:  // Midi Event
-        static std::set<uint8_t> noLength{0b11110001, 0b11110100, 0b11110101,
-                                          0b11110110, 0b11111000, 0b11111001,
-                                          0b11111010, 0b11111011, 0b11111100,
-                                          0b11111101, 0b11111110};
-
-        static std::set<uint8_t> single{
-            0b11110011,
-            0b11000000,
-            0b11010000,
-        };
-
-        static std::set<uint8_t> two{
-            0b10000000, 0b10010000, 0b10100000,
-            0b11110010, 0b10110000, 0b11100000,
-        };
         if (readMidiEvent(it, deltaTime)) {
           runningStatus = identifier;
           break;
