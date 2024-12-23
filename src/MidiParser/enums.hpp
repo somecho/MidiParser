@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <set>
+
 namespace MidiParser {
 
 enum class Meta : uint8_t {

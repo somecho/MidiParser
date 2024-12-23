@@ -1,18 +1,11 @@
 #include <netinet/in.h>
 #include <cassert>
-#include <cstdint>
 #include <format>
-#include <iostream>
-#include <iterator>
-#include <set>
-#include <stack>
 #include <stdexcept>
-#include <string>
 #include <variant>
 
 #include "Parser.hpp"
 #include "enums.hpp"
-#include "events.hpp"
 
 namespace MidiParser {
 
