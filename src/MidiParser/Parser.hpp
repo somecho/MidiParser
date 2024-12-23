@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <fstream>
+#include <optional>
 #include <stack>
 #include <string>
 #include <vector>
@@ -44,6 +45,9 @@ class Parser {
   TrackEvent readMetaEvent(std::vector<byte>::iterator& it,
                            uint32_t deltaTime) const;
   void readSysExEvent(std::vector<byte>::iterator& it) const;
+  std::optional<MIDIEvent> readMidiEvent(std::vector<byte>::iterator& it) const;
+  std::optional<MIDIEvent> readMidiEvent(std::vector<byte>::iterator& it,
+                                         uint8_t runningStatus) const;
 };
 
 }  // namespace MidiParser

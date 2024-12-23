@@ -12,7 +12,7 @@ set(MIDI_PARSER_SOURCES
 
 set(MIDI_PARSER_HEADERS
   ${CMAKE_SOURCE_DIR}/src/MidiParser/Parser.hpp
-  ${CMAKE_SOURCE_DIR}/src/MidiParser/Meta.hpp
+  ${CMAKE_SOURCE_DIR}/src/MidiParser/enums.hpp
   ${CMAKE_SOURCE_DIR}/src/MidiParser/events.hpp
 )
 

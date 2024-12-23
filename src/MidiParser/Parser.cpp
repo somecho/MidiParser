@@ -10,8 +10,8 @@
 #include <string>
 #include <variant>
 
-#include "Meta.hpp"
 #include "Parser.hpp"
+#include "enums.hpp"
 #include "events.hpp"
 
 namespace MidiParser {
@@ -84,7 +84,6 @@ std::vector<TrackEvent> Parser::parseTrackData(std::vector<byte>& data) {
   bool endOfTrackFound = false;
   bool firstByteRead = false;
   uint8_t runningStatus = 0;
-  uint8_t maskedRunning = runningStatus & 0b11110000;
   while (!endOfTrackFound) {
     uint8_t deltaTime = firstByteRead ? readvlq(++it) : readvlq(it);
     if (!firstByteRead) {
@@ -105,7 +104,7 @@ std::vector<TrackEvent> Parser::parseTrackData(std::vector<byte>& data) {
       case 0xF7:  // SysEx Event
         readSysExEvent(it);
         break;
-      default:  // find midi
+      default:  // Midi Event
         static std::set<uint8_t> noLength{0b11110001, 0b11110100, 0b11110101,
                                           0b11110110, 0b11111000, 0b11111001,
                                           0b11111010, 0b11111011, 0b11111100,
@@ -121,48 +120,16 @@ std::vector<TrackEvent> Parser::parseTrackData(std::vector<byte>& data) {
             0b10000000, 0b10010000, 0b10100000,
             0b11110010, 0b10110000, 0b11100000,
         };
-        uint8_t b = identifier;
-        auto masked = b & 0b11110000;
-        if (noLength.contains(b)) {
-          std::cout << "MIDI skip" << std::endl;
+        if (readMidiEvent(it)) {
           runningStatus = identifier;
-          maskedRunning = runningStatus & 0b11110000;
           break;
         }
-        if (single.contains(b) || single.contains(masked)) {
-          std::cout << "MIDI skip 1" << std::endl;
-          std::advance(it, 1);
-          runningStatus = identifier;
-          maskedRunning = runningStatus & 0b11110000;
-          break;
-        }
-
-        if (two.contains(b) || two.contains(masked)) {
-          std::cout << "MIDI skip 2" << std::endl;
-          std::advance(it, 2);
-          runningStatus = identifier;
-          maskedRunning = runningStatus & 0b11110000;
-          break;
-        }
-        // no status byte encountered
-        if (noLength.contains(runningStatus)) {
-          std::advance(it, -1);
-          break;
-        }
-        if (single.contains(runningStatus) || single.contains(maskedRunning)) {
-          break;
-        }
-        if (two.contains(runningStatus) || two.contains(maskedRunning)) {
-          std::cout << "MIDI" << std::endl;
-          std::advance(it, 1);
+        if (readMidiEvent(it, runningStatus)) {
           break;
         }
         throw std::runtime_error("SOMETHING WRONG");
-        endOfTrackFound = true;
-        break;
     }
   }
-  std::cout << "Finished parsing track" << std::endl;
   assert(++it == data.end());
   return trackEvents;
 }  // Parser::parseTrackData
@@ -273,6 +240,33 @@ void Parser::readSysExEvent(std::vector<byte>::iterator& it) const {
   while (next != 0xF7) {
     next = *++it;
   }
-};  // Parser::readSysexEvent
+}  // Parser::readSysexEvent
+
+std::optional<MIDIEvent> Parser::readMidiEvent(
+    std::vector<byte>::iterator& it) const {
+  if (StatusOnlyMIDI.contains(*it)) {
+    return MIDIEvent{.status = *it};
+  }
+  if (SingleByteMIDI.contains(*it & 0b11110000)) {
+    return MIDIEvent{.status = *it, .data = {*++it}};
+  }
+
+  if (DoubleByteMIDI.contains(*it & 0b11110000)) {
+    return MIDIEvent{.status = *it, .data = {*++it, *++it}};
+  }
+  return std::nullopt;
+}  // Parser::readMidiEvent
+
+std::optional<MIDIEvent> Parser::readMidiEvent(std::vector<byte>::iterator& it,
+                                               uint8_t runningStatus) const {
+
+  if (SingleByteMIDI.contains(runningStatus & 0b11110000)) {
+    return MIDIEvent{.status = runningStatus, .data = {*it}};
+  }
+  if (DoubleByteMIDI.contains(runningStatus & 0b11110000)) {
+    return MIDIEvent{.status = runningStatus, .data = {*it, *++it}};
+  }
+  return std::nullopt;
+}  // Parser::readMidiEvent
 
 }  // namespace MidiParser

@@ -6,46 +6,6 @@
 
 namespace MidiParser {
 
-struct BaseTrackEvent {
-  uint32_t deltaTime;
-};
-
-struct BaseMidiEvent : BaseTrackEvent {
-  uint8_t channel;
-};
-
-struct MIDIControlChangeEvent : BaseMidiEvent {
-  uint8_t controller;
-  uint8_t value;
-};
-
-struct MIDINoteOnEvent : BaseMidiEvent {
-  uint8_t key;
-  uint8_t velocity;
-};
-
-struct MIDINoteOffEvent : BaseMidiEvent {
-  uint8_t key;
-  uint8_t velocity;
-};
-
-struct MIDIPolyAftertouchEvent : BaseMidiEvent {
-  uint8_t key;
-  uint8_t value;
-};
-
-struct MIDIProgramChangeEvent : BaseMidiEvent {
-  uint8_t program;
-};
-
-struct MIDIAftertouchEvent : BaseMidiEvent {
-  uint8_t value;
-};
-
-struct MIDIPitchBendEvent : BaseMidiEvent {
-  uint8_t value;
-};
-
 struct MetaSequenceNumberEvent {
   uint32_t deltaTime;
   uint16_t number;
@@ -134,22 +94,30 @@ struct MetaSequencerSpecificEvent {
   std::vector<uint8_t> data;
 };
 
-using TrackEvent = std::variant<  // Meta Events
-    MetaSequenceNumberEvent,      //
-    MetaTextEvent,                //
-    MetaCopyrightNoticeEvent,     //
-    MetaTrackNameEvent,           //
-    MetaInstrumentNameEvent,      //
-    MetaLyricEvent,               //
-    MetaMarkerEvent,              //
-    MetaCueEvent,                 //
-    MetaEndOfTrackEvent,          //
-    MetaChannelPrefixEvent,       //
-    MetaMIDIPortEvent,            //
-    MetaSetTempoEvent,            //
-    MetaSMPTEOffsetEvent,         //
-    MetaTimeSignatureEvent,       //
-    MetaKeySignatureEvent,        //
-    MetaSequencerSpecificEvent>;
+struct MIDIEvent {
+  uint8_t status;
+  std::vector<uint8_t> data;
+};
+
+using TrackEvent = std::variant<
+    // Meta Events
+    MetaSequenceNumberEvent,     //
+    MetaTextEvent,               //
+    MetaCopyrightNoticeEvent,    //
+    MetaTrackNameEvent,          //
+    MetaInstrumentNameEvent,     //
+    MetaLyricEvent,              //
+    MetaMarkerEvent,             //
+    MetaCueEvent,                //
+    MetaEndOfTrackEvent,         //
+    MetaChannelPrefixEvent,      //
+    MetaMIDIPortEvent,           //
+    MetaSetTempoEvent,           //
+    MetaSMPTEOffsetEvent,        //
+    MetaTimeSignatureEvent,      //
+    MetaKeySignatureEvent,       //
+    MetaSequencerSpecificEvent,  //
+    // Midi Events
+    MIDIEvent>;
 
 }  // namespace MidiParser
