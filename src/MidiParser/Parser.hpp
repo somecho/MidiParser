@@ -44,7 +44,8 @@ class Parser {
   uint32_t readvlq(std::vector<byte>::iterator& it) const;
   TrackEvent readMetaEvent(std::vector<byte>::iterator& it,
                            uint32_t deltaTime) const;
-  void readSysExEvent(std::vector<byte>::iterator& it) const;
+  SysExEvent readSysExEvent(std::vector<byte>::iterator& it,
+                            uint32_t deltaTime) const;
   std::optional<MIDIEvent> readMidiEvent(std::vector<byte>::iterator& it,
                                          uint32_t deltaTime) const;
   std::optional<MIDIEvent> readMidiEvent(std::vector<byte>::iterator& it,

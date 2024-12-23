@@ -100,6 +100,11 @@ struct MIDIEvent {
   std::vector<uint8_t> data;
 };
 
+struct SysExEvent {
+  uint32_t deltaTime;
+  std::vector<uint8_t> data;
+};
+
 using TrackEvent = std::variant<
     // Meta Events
     MetaSequenceNumberEvent,     //

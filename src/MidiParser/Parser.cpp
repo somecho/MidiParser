@@ -102,7 +102,7 @@ std::vector<TrackEvent> Parser::parseTrackData(std::vector<byte>& data) {
       }
       case 0xF0:
       case 0xF7:  // SysEx Event
-        readSysExEvent(it);
+        readSysExEvent(it, deltaTime);
         break;
       default:  // Midi Event
         static std::set<uint8_t> noLength{0b11110001, 0b11110100, 0b11110101,
@@ -235,11 +235,15 @@ TrackEvent Parser::readMetaEvent(std::vector<byte>::iterator& it,
   }
 }  // Parser::readMetaEvent
 
-void Parser::readSysExEvent(std::vector<byte>::iterator& it) const {
+SysExEvent Parser::readSysExEvent(std::vector<byte>::iterator& it,
+                                  uint32_t deltaTime) const {
+  std::vector<uint8_t> data;
   uint8_t next = *++it;
   while (next != 0xF7) {
+    data.emplace_back(next);
     next = *++it;
   }
+  return SysExEvent{.deltaTime = deltaTime, .data = data};
 }  // Parser::readSysexEvent
 
 std::optional<MIDIEvent> Parser::readMidiEvent(std::vector<byte>::iterator& it,
