@@ -8,7 +8,10 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(googletest)
 
-add_executable(MidiParserTest ${CMAKE_SOURCE_DIR}/tests/Parser.test.cpp)
+add_executable(MidiParserTest
+  ${CMAKE_SOURCE_DIR}/tests/Parser.test.cpp
+  ${CMAKE_SOURCE_DIR}/tests/vlqto32.test.cpp
+)
 
 target_compile_features(MidiParserTest PUBLIC cxx_std_23)
 
