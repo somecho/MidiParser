@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "events.h"
+#include "events.hpp"
 
 namespace MidiParser {
 

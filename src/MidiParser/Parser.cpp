@@ -16,7 +16,7 @@
 
 namespace MidiParser {
 
-void Parser::parse(const std::string& path) {
+MidiFile Parser::parse(const std::string& path) {
   m_file = std::ifstream(path, std::ios::binary);
   readHeaderData();
   readTrackData();
@@ -27,6 +27,10 @@ void Parser::parse(const std::string& path) {
   }
   m_file.close();
   parseTrackData();
+  return MidiFile{.fileFormat = m_fileFormat,
+                  .numTracks = m_numTracks,
+                  .tickDivision = m_tickDivision,
+                  .tracks = std::move(m_midiTracks)};
 }  // Parser::parse
 
 uint32_t Parser::vlqto32(std::stack<byte>& s) {
@@ -43,10 +47,11 @@ uint32_t Parser::vlqto32(std::stack<byte>& s) {
 void Parser::readHeaderData() {
   m_file.read(reinterpret_cast<char*>(m_headerData.data()),
               m_headerData.size());
-  static size_t numTrackOffset = 10;
-  uint16_t numTracks = 0 | (m_headerData[numTrackOffset] << 8) |
-                       m_headerData[numTrackOffset + 1];
-  m_trackData.resize(numTracks);
+  m_fileFormat = 0 | (m_headerData[8] << 8) | m_headerData[9];
+  m_numTracks = 0 | (m_headerData[10] << 8) | m_headerData[11];
+  m_tickDivision = 0 | (m_headerData[12] << 8) | m_headerData[13];
+  m_trackData.resize(m_numTracks);
+  m_midiTracks.resize(m_numTracks);
 }  // Parser::readHeaderData
 
 void Parser::readTrackData() {
@@ -61,18 +66,19 @@ void Parser::readTrackData() {
 
     auto& track = m_trackData.at(i);
     track.resize(trackDataLength);
+    m_midiTracks.at(i).length = trackDataLength;
     m_file.read(reinterpret_cast<char*>(track.data()), track.size());
   }
 }  // Parser::readTrackData
 
 void Parser::parseTrackData() {
   for (size_t i = 0; i < m_trackData.size(); i++) {
-    parseTrackData(m_trackData.at(i));
+    m_midiTracks.at(i).events = parseTrackData(m_trackData.at(i));
   }
 
 }  // Parser::parseTrackData
 
-void Parser::parseTrackData(std::vector<byte>& data) {
+std::vector<TrackEvent> Parser::parseTrackData(std::vector<byte>& data) {
   std::vector<byte>::iterator it = data.begin();
   std::vector<TrackEvent> trackEvents;
   bool endOfTrackFound = false;
@@ -95,9 +101,7 @@ void Parser::parseTrackData(std::vector<byte>& data) {
         trackEvents.emplace_back(e);
         break;
       }
-      case 0xF0:  // SysEx Event
-        readSysExEvent(it);
-        break;
+      case 0xF0:
       case 0xF7:  // SysEx Event
         readSysExEvent(it);
         break;
@@ -160,6 +164,7 @@ void Parser::parseTrackData(std::vector<byte>& data) {
   }
   std::cout << "Finished parsing track" << std::endl;
   assert(++it == data.end());
+  return trackEvents;
 }  // Parser::parseTrackData
 
 uint32_t Parser::readvlq(std::vector<byte>::iterator& it) const {
@@ -174,7 +179,7 @@ uint32_t Parser::readvlq(std::vector<byte>::iterator& it) const {
 }  // Parser::readDeltaTime
 
 TrackEvent Parser::readMetaEvent(std::vector<byte>::iterator& it,
-                                 uint32_t deltaTime) {
+                                 uint32_t deltaTime) const {
   uint8_t metaType = *++it;
   uint32_t length = readvlq(++it);
   switch (static_cast<Meta>(metaType)) {

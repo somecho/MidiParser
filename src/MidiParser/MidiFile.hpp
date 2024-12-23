@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "MidiTrack.h"
+#include "MidiTrack.hpp"
 
 namespace MidiParser {
 
