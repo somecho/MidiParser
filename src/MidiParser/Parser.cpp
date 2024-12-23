@@ -28,7 +28,7 @@ MidiFile Parser::parse(const std::string& path) {
 uint32_t Parser::vlqto32(std::stack<byte>& s) {
   uint32_t out = 0;
   size_t size = s.size();
-  for (size_t i = 0; i < size; i++) {
+  for (size_t i = 0; i < size; ++i) {
     byte in = s.top();
     out |= (in & 0b01111111) << (7 * i);
     s.pop();
@@ -48,12 +48,10 @@ void Parser::readHeaderData() {
 
 void Parser::readTrackData() {
   for (size_t i = 0; i < m_trackData.size(); ++i) {
-    std::array<byte, 4> identifier;
-    m_file.read(reinterpret_cast<char*>(identifier.data()), identifier.size());
-    uint32_t trackDataLength;
-    m_file.read(reinterpret_cast<char*>(&trackDataLength),
-                sizeof(trackDataLength));
-    trackDataLength = ntohl(trackDataLength);
+    std::array<byte, 8> metadata;
+    m_file.read(reinterpret_cast<char*>(metadata.data()), metadata.size());
+    uint32_t trackDataLength = 0 | metadata[4] << 24 | metadata[5] << 16 |
+                               metadata[6] << 8 | metadata[7];
     auto& track = m_trackData.at(i);
     track.resize(trackDataLength);
     m_midiTracks.at(i).length = trackDataLength;
