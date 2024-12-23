@@ -120,11 +120,11 @@ std::vector<TrackEvent> Parser::parseTrackData(std::vector<byte>& data) {
             0b10000000, 0b10010000, 0b10100000,
             0b11110010, 0b10110000, 0b11100000,
         };
-        if (readMidiEvent(it)) {
+        if (readMidiEvent(it, deltaTime)) {
           runningStatus = identifier;
           break;
         }
-        if (readMidiEvent(it, runningStatus)) {
+        if (readMidiEvent(it, deltaTime, runningStatus)) {
           break;
         }
         throw std::runtime_error("SOMETHING WRONG");
@@ -242,29 +242,33 @@ void Parser::readSysExEvent(std::vector<byte>::iterator& it) const {
   }
 }  // Parser::readSysexEvent
 
-std::optional<MIDIEvent> Parser::readMidiEvent(
-    std::vector<byte>::iterator& it) const {
+std::optional<MIDIEvent> Parser::readMidiEvent(std::vector<byte>::iterator& it,
+                                               uint32_t deltaTime) const {
   if (StatusOnlyMIDI.contains(*it)) {
-    return MIDIEvent{.status = *it};
+    return MIDIEvent{.deltaTime = deltaTime, .status = *it};
   }
   if (SingleByteMIDI.contains(*it & 0b11110000)) {
-    return MIDIEvent{.status = *it, .data = {*++it}};
+    return MIDIEvent{.deltaTime = deltaTime, .status = *it, .data = {*++it}};
   }
 
   if (DoubleByteMIDI.contains(*it & 0b11110000)) {
-    return MIDIEvent{.status = *it, .data = {*++it, *++it}};
+    return MIDIEvent{
+        .deltaTime = deltaTime, .status = *it, .data = {*++it, *++it}};
   }
   return std::nullopt;
 }  // Parser::readMidiEvent
 
 std::optional<MIDIEvent> Parser::readMidiEvent(std::vector<byte>::iterator& it,
+                                               uint32_t deltaTime,
                                                uint8_t runningStatus) const {
 
   if (SingleByteMIDI.contains(runningStatus & 0b11110000)) {
-    return MIDIEvent{.status = runningStatus, .data = {*it}};
+    return MIDIEvent{
+        .deltaTime = deltaTime, .status = runningStatus, .data = {*it}};
   }
   if (DoubleByteMIDI.contains(runningStatus & 0b11110000)) {
-    return MIDIEvent{.status = runningStatus, .data = {*it, *++it}};
+    return MIDIEvent{
+        .deltaTime = deltaTime, .status = runningStatus, .data = {*it, *++it}};
   }
   return std::nullopt;
 }  // Parser::readMidiEvent

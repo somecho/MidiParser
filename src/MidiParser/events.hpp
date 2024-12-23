@@ -95,6 +95,7 @@ struct MetaSequencerSpecificEvent {
 };
 
 struct MIDIEvent {
+  uint32_t deltaTime;
   uint8_t status;
   std::vector<uint8_t> data;
 };
