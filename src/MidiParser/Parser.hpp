@@ -6,6 +6,7 @@
 #include <optional>
 #include <stack>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "MidiFile.hpp"
@@ -26,6 +27,7 @@ class Parser {
 
  private:
   std::ifstream m_file;
+  std::vector<std::thread> m_threadPool;
 
   std::array<byte, 14> m_headerData;
   std::vector<std::vector<byte>> m_trackData;
@@ -38,8 +40,8 @@ class Parser {
   void readHeaderData();
   void readTrackData();
 
-  void parseTrackData();
-  std::vector<TrackEvent> parseTrackData(std::vector<byte>& data);
+  void parseAllTrackData();
+  std::vector<TrackEvent> parseTrackData(size_t trackIndex);
 
   uint32_t readvlq(std::vector<byte>::iterator& it) const;
   TrackEvent readMetaEvent(std::vector<byte>::iterator& it,

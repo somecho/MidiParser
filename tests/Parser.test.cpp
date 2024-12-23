@@ -1,119 +1,58 @@
 #include <gtest/gtest.h>
 #include <string>
+#include <unordered_map>
 
+#include "MidiParser/MidiFile.hpp"
 #include "MidiParser/Parser.hpp"
 
-TEST(Parser_ParsesFile, Queen) {
+class Parser : public testing::TestWithParam<std::string> {
+ public:
+  Parser() {};
+
+  static void SetUpTestSuite() {
+    map = new std::unordered_map<std::string, MidiParser::MidiFile>();
+  };
+
+  static void TearDownTestSuite() {
+    delete map;
+    map = nullptr;
+  };
+
+  std::string data = std::string(EXAMPLES_DIR) + "/" + GetParam() + ".mid";
+  static std::unordered_map<std::string, MidiParser::MidiFile>* map;
+};
+
+std::unordered_map<std::string, MidiParser::MidiFile>* Parser::map = nullptr;
+
+TEST_P(Parser, ParsesFileWithoutThrowing) {
   auto p = MidiParser::Parser();
-  p.parse(std::string(EXAMPLES_DIR) + "/queen.mid");
+  auto m = p.parse(data);
+  map->insert({GetParam(), m});
 }
 
-TEST(Parser_ParsesFile, Mozart) {
-  auto p = MidiParser::Parser();
-  p.parse(std::string(EXAMPLES_DIR) + "/mozart.mid");
+TEST_P(Parser, HeaderNumMatchesNumParsedTracks) {
+  const auto& m = map->at(GetParam());
+  EXPECT_EQ(m.numTracks, m.tracks.size());
 }
 
-TEST(Parser_ParsesFile, Mahler) {
-  auto p = MidiParser::Parser();
-  p.parse(std::string(EXAMPLES_DIR) + "/mahler.mid");
-}
-
-TEST(Parser_ParsesFile, Debussy) {
-  auto p = MidiParser::Parser();
-  p.parse(std::string(EXAMPLES_DIR) + "/debussy.mid");
-}
-
-TEST(Parser_vlqto32, ConcatenatesSingleBytesCorrectly) {
-  {
-    std::stack<uint8_t> s;
-    s.push(0x0);
-    auto res = MidiParser::Parser::vlqto32(s);
-    EXPECT_EQ(res, 0x0);
-  }
-  {
-    std::stack<uint8_t> s;
-    s.push(0x40);
-    auto res = MidiParser::Parser::vlqto32(s);
-    EXPECT_EQ(res, 0x40);
-  }
-  {
-    std::stack<uint8_t> s;
-    s.push(0x7F);
-    auto res = MidiParser::Parser::vlqto32(s);
-    EXPECT_EQ(res, 0x7F);
+TEST_P(Parser, ParsedTracksAreNotEmpty) {
+  const auto& m = map->at(GetParam());
+  for (const auto& t : m.tracks) {
+    EXPECT_FALSE(t.events.empty());
   }
 }
 
-TEST(Parser_vlqto32, Concatenates2BytesCorrectly) {
-  {
-    std::stack<uint8_t> s;
-    s.push(0x81);
-    s.push(0x0);
-    auto res = MidiParser::Parser::vlqto32(s);
-    EXPECT_EQ(res, 0x80);
+TEST_P(Parser, SizesReadMatchesRealSize) {
+  const auto& m = map->at(GetParam());
+  size_t s = 14;
+  for (const auto& t : m.tracks) {
+    s += t.length + 8;
   }
-  {
-    std::stack<uint8_t> s;
-    s.push(0xC0);
-    s.push(0x0);
-    auto res = MidiParser::Parser::vlqto32(s);
-    EXPECT_EQ(res, 0x2000);
-  }
+  std::ifstream file(data, std::ios::binary);
+  file.seekg(0, std::ios::end);
+  EXPECT_EQ(s, file.tellg());
 }
 
-TEST(Parser_vlqto32, Concatenates3BytesCorrectly) {
-  {
-    std::stack<uint8_t> s;
-    s.push(0x81);
-    s.push(0x80);
-    s.push(0x00);
-    auto res = MidiParser::Parser::vlqto32(s);
-    EXPECT_EQ(res, 0x4000);
-  }
-  {
-    std::stack<uint8_t> s;
-    s.push(0xC0);
-    s.push(0x80);
-    s.push(0x0);
-    auto res = MidiParser::Parser::vlqto32(s);
-    EXPECT_EQ(res, 0x100000);
-  }
-  {
-    std::stack<uint8_t> s;
-    s.push(0xFF);
-    s.push(0xFF);
-    s.push(0x7F);
-    auto res = MidiParser::Parser::vlqto32(s);
-    EXPECT_EQ(res, 0x1FFFFF);
-  }
-}
-
-TEST(Parser_vlqto32, Concatenates4BytesCorrectly) {
-  {
-    std::stack<uint8_t> s;
-    s.push(0xC0);
-    s.push(0x80);
-    s.push(0x80);
-    s.push(0x00);
-    auto res = MidiParser::Parser::vlqto32(s);
-    EXPECT_EQ(res, 0x8000000);
-  }
-  {
-    std::stack<uint8_t> s;
-    s.push(0x81);
-    s.push(0x80);
-    s.push(0x80);
-    s.push(0x00);
-    auto res = MidiParser::Parser::vlqto32(s);
-    EXPECT_EQ(res, 0x200000);
-  }
-  {
-    std::stack<uint8_t> s;
-    s.push(0xFF);
-    s.push(0xFF);
-    s.push(0xFF);
-    s.push(0x7F);
-    auto res = MidiParser::Parser::vlqto32(s);
-    EXPECT_EQ(res, 0x0FFFFFFF);
-  }
-}
+INSTANTIATE_TEST_SUITE_P(
+    Basic, Parser, testing::Values("queen", "mozart", "debussy", "mahler"),
+    [](const testing::TestParamInfo<std::string>& info) { return info.param; });
