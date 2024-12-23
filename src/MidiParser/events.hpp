@@ -124,6 +124,8 @@ using TrackEvent = std::variant<
     MetaKeySignatureEvent,       //
     MetaSequencerSpecificEvent,  //
     // Midi Events
-    MIDIEvent>;
+    MIDIEvent,  //
+                // SysEx Events
+    SysExEvent>;
 
 }  // namespace MidiParser

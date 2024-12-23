@@ -1,5 +1,4 @@
 #include <netinet/in.h>
-#include <cassert>
 #include <format>
 #include <stdexcept>
 #include <variant>
@@ -94,7 +93,7 @@ std::vector<TrackEvent> Parser::parseTrackData(std::vector<byte>& data) {
       }
       case 0xF0:
       case 0xF7:  // SysEx Event
-        readSysExEvent(it, deltaTime);
+        trackEvents.emplace_back(readSysExEvent(it, deltaTime));
         break;
       default:  // Midi Event
         if (readMidiEvent(it, deltaTime)) {
@@ -104,10 +103,15 @@ std::vector<TrackEvent> Parser::parseTrackData(std::vector<byte>& data) {
         if (readMidiEvent(it, deltaTime, runningStatus)) {
           break;
         }
-        throw std::runtime_error("SOMETHING WRONG");
+        throw std::runtime_error(
+            std::format("Unable to read or process byte: {:02X}", *it));
     }
   }
-  assert(++it == data.end());
+  if (++it != data.end()) {
+    throw std::runtime_error(
+        "Track was marked as finished before reaching the end of the "
+        "iterator.");
+  }
   return trackEvents;
 }  // Parser::parseTrackData
 
