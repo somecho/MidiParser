@@ -1,5 +1,6 @@
 #include <netinet/in.h>
 #include <format>
+#include <iostream>
 #include <stdexcept>
 
 #include "Parser.hpp"
@@ -72,18 +73,14 @@ std::vector<TrackEvent> Parser::parseTrackData(size_t trackIndex) {
   std::vector<byte>::iterator it = data.begin();
   auto& trackEvents = m_midiTracks.at(trackIndex).events;
   bool endOfTrackFound = false;
-  bool firstByteRead = false;
   uint8_t runningStatus = 0;
   while (!endOfTrackFound) {
-    uint8_t deltaTime = firstByteRead ? readvlq(++it) : readvlq(it);
-    if (!firstByteRead) {
-      firstByteRead = true;
-    }
+    uint8_t deltaTime = readvlq(it);
     uint8_t identifier = *++it;
     switch (identifier) {
       case 0xFF: {  // Meta Event
         auto e = readMetaEvent(it, deltaTime);
-        if (std::holds_alternative<MetaEndOfTrackEvent>(e)) {
+        if (std::get<MetaEvent>(e).status == 0x2F) {
           endOfTrackFound = true;
         }
         trackEvents.emplace_back(e);
@@ -105,7 +102,7 @@ std::vector<TrackEvent> Parser::parseTrackData(size_t trackIndex) {
             std::format("Unable to read or process byte: {:02X}", *it));
     }
   }
-  if (++it != data.end()) {
+  if (it != data.end()) {
     throw std::runtime_error(
         "Track was marked as finished before reaching the end of the "
         "iterator.");
@@ -128,90 +125,12 @@ TrackEvent Parser::readMetaEvent(std::vector<byte>::iterator& it,
                                  uint32_t deltaTime) const {
   uint8_t metaType = *++it;
   uint32_t length = readvlq(++it);
-  switch (static_cast<Meta>(metaType)) {
-    case Meta::SEQUENCE_NUMBER: {
-      if (length == 0) {
-        return MetaSequenceNumberEvent{.deltaTime = deltaTime,
-                                       .numberOmmited = true};
-      } else {
-        uint16_t num = 0 | (*++it) << 8 | *++it;
-        return MetaSequenceNumberEvent{.deltaTime = deltaTime,
-                                       .number = ntohs(num),
-                                       .numberOmmited = false};
-      }
-    }
-    case Meta::TEXT: {
-      std::vector<byte> data(++it, (it + length + 1));
-      std::advance(it, length - 1);
-      return MetaTextEvent{.deltaTime = deltaTime, .data = data};
-    }
-    case Meta::COPYRIGHT_NOTICE: {
-      std::vector<byte> data(++it, (it + length + 1));
-      std::advance(it, length - 1);
-      return MetaCopyrightNoticeEvent{.deltaTime = deltaTime, .data = data};
-    }
-    case Meta::TRACK_NAME: {
-      std::vector<byte> data(++it, (it + length + 1));
-      std::advance(it, length - 1);
-      return MetaTrackNameEvent{.deltaTime = deltaTime, .data = data};
-    }
-    case Meta::INSTRUMENT_NAME: {
-      std::vector<byte> data(++it, (it + length + 1));
-      std::advance(it, length - 1);
-      return MetaInstrumentNameEvent{.deltaTime = deltaTime, .data = data};
-    }
-    case Meta::LYRIC: {
-      std::vector<byte> data(++it, (it + length + 1));
-      std::advance(it, length - 1);
-      return MetaLyricEvent{.deltaTime = deltaTime, .data = data};
-    }
-    case Meta::MARKER: {
-      std::vector<byte> data(++it, (it + length + 1));
-      std::advance(it, length - 1);
-      return MetaMarkerEvent{.deltaTime = deltaTime, .data = data};
-    }
-    case Meta::CUE: {
-      std::vector<byte> data(++it, (it + length + 1));
-      std::advance(it, length - 1);
-      return MetaCueEvent{.deltaTime = deltaTime, .data = data};
-    }
-    case Meta::CHANNEl_PREFIX:
-      return MetaChannelPrefixEvent{.deltaTime = deltaTime, .channel = *++it};
-    case Meta::MIDI_PORT:
-      return MetaMIDIPortEvent{.deltaTime = deltaTime, .port = *++it};
-    case Meta::END_OF_TRACK:
-      return MetaEndOfTrackEvent{deltaTime};
-    case Meta::SET_TEMPO:
-      return MetaSetTempoEvent{
-          .deltaTime = deltaTime,
-          .tempo = uint32_t(0 | (*++it << 16) | (*++it << 8) | *++it)};
-    case Meta::SMPTE_OFFSET:
-      return MetaSMPTEOffsetEvent{.deltaTime = deltaTime,
-                                  .hours = *++it,
-                                  .minutes = *++it,
-                                  .seconds = *++it,
-                                  .frames = *++it,
-                                  .subframes = *++it};
-    case Meta::TIME_SIGNATURE:
-      return MetaTimeSignatureEvent{.deltaTime = deltaTime,
-                                    .numerator = *++it,
-                                    .denominator = *++it,
-                                    .clocksPerClick = *++it,
-                                    .quarterDivision = *++it};
-    case Meta::KEY_SIGNATURE:
-      return MetaKeySignatureEvent{.deltaTime = deltaTime,
-                                   .signature = static_cast<int8_t>(*++it),
-                                   .mode = *++it};
-
-    case Meta::SEQUENCER_SPECIFIC: {
-      std::vector<byte> data(++it, (it + length + 1));
-      std::advance(it, length - 1);
-      return MetaSequencerSpecificEvent{.deltaTime = deltaTime, .data = data};
-    }
-    default:
-      throw std::runtime_error(
-          std::format("Unrecognized meta event: {:02x}", metaType));
+  std::vector<byte> data;
+  for (uint32_t i = 0; i < length; i++) {
+    data.emplace_back(*++it);
   }
+  std::advance(it, 1);
+  return MetaEvent{.deltaTime = deltaTime, .status = metaType, .data = data};
 }  // Parser::readMetaEvent
 
 SysExEvent Parser::readSysExEvent(std::vector<byte>::iterator& it,
@@ -222,19 +141,22 @@ SysExEvent Parser::readSysExEvent(std::vector<byte>::iterator& it,
     data.emplace_back(next);
     next = *++it;
   }
+  std::advance(it, 1);
   return SysExEvent{.deltaTime = deltaTime, .data = data};
 }  // Parser::readSysexEvent
 
 std::optional<MIDIEvent> Parser::readMidiEvent(std::vector<byte>::iterator& it,
                                                uint32_t deltaTime) const {
   if (StatusOnlyMIDI.contains(*it)) {
+    std::advance(it, 1);
     return MIDIEvent{.deltaTime = deltaTime, .status = *it};
   }
   if (SingleByteMIDI.contains(*it & 0b11110000)) {
+    std::advance(it, 1);
     return MIDIEvent{.deltaTime = deltaTime, .status = *it, .data = {*++it}};
   }
-
   if (DoubleByteMIDI.contains(*it & 0b11110000)) {
+    std::advance(it, 1);
     return MIDIEvent{
         .deltaTime = deltaTime, .status = *it, .data = {*++it, *++it}};
   }
@@ -244,12 +166,13 @@ std::optional<MIDIEvent> Parser::readMidiEvent(std::vector<byte>::iterator& it,
 std::optional<MIDIEvent> Parser::readMidiEvent(std::vector<byte>::iterator& it,
                                                uint32_t deltaTime,
                                                uint8_t runningStatus) const {
-
   if (SingleByteMIDI.contains(runningStatus & 0b11110000)) {
+    std::advance(it, 1);
     return MIDIEvent{
         .deltaTime = deltaTime, .status = runningStatus, .data = {*it}};
   }
   if (DoubleByteMIDI.contains(runningStatus & 0b11110000)) {
+    std::advance(it, 1);
     return MIDIEvent{
         .deltaTime = deltaTime, .status = runningStatus, .data = {*it, *++it}};
   }
