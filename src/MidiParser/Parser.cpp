@@ -1,7 +1,6 @@
 #include <netinet/in.h>
 #include <format>
 #include <stdexcept>
-#include <variant>
 
 #include "Parser.hpp"
 #include "enums.hpp"
@@ -18,7 +17,10 @@ MidiFile Parser::parse(const std::string& path) {
         "Error reading midi file. There seems to be a length mismatch.");
   }
   m_file.close();
-  parseTrackData();
+  parseAllTrackData();
+  for (auto& t : m_threadPool) {
+    t.join();
+  }
   return MidiFile{.fileFormat = m_fileFormat,
                   .numTracks = m_numTracks,
                   .tickDivision = m_tickDivision,
@@ -59,11 +61,10 @@ void Parser::readTrackData() {
   }
 }  // Parser::readTrackData
 
-void Parser::parseTrackData() {
+void Parser::parseAllTrackData() {
   for (size_t i = 0; i < m_trackData.size(); ++i) {
-    parseTrackData(i);
+    m_threadPool.emplace_back(std::thread(&Parser::parseTrackData, this, i));
   }
-
 }  // Parser::parseTrackData
 
 std::vector<TrackEvent> Parser::parseTrackData(size_t trackIndex) {
