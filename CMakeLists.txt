@@ -1,19 +1,22 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(midiparser VERSION 0.2.0)
+project(midiparser VERSION 0.2.1)
 
 add_library(MidiParser)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
+set(MIDI_PARSER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/MidiParser)
+set(MIDI_PARSER_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
+
 set(MIDI_PARSER_SOURCES
-  ${CMAKE_SOURCE_DIR}/src/MidiParser/Parser.cpp
+  ${MIDI_PARSER_DIR}/Parser.cpp
 )
 
 set(MIDI_PARSER_HEADERS
-  ${CMAKE_SOURCE_DIR}/src/MidiParser/Parser.hpp
-  ${CMAKE_SOURCE_DIR}/src/MidiParser/enums.hpp
-  ${CMAKE_SOURCE_DIR}/src/MidiParser/events.hpp
+  ${MIDI_PARSER_DIR}/Parser.hpp
+  ${MIDI_PARSER_DIR}/enums.hpp
+  ${MIDI_PARSER_DIR}/events.hpp
 )
 
 target_sources(MidiParser
@@ -21,7 +24,7 @@ target_sources(MidiParser
     ${MIDI_PARSER_SOURCES}
   PUBLIC
     FILE_SET HEADERS
-    BASE_DIRS ${CMAKE_SOURCE_DIR}/src
+    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
     FILES ${MIDI_PARSER_HEADERS}
 )
 
@@ -54,3 +57,11 @@ endif(MSVC)
 
 add_subdirectory(tests)
 add_subdirectory(tools)
+
+add_executable(example_noteon 
+  ${CMAKE_CURRENT_SOURCE_DIR}/examples/MidiParser_Example_NoteOnEvents.cpp)
+target_link_libraries(example_noteon PRIVATE MidiParser)
+  target_compile_options(example_noteon PRIVATE
+    $<$<CONFIG:Debug>:-g -O0 -Wall -Wpedantic>
+    $<$<CONFIG:Release>:-O3 -DNDEBUG -s -Wall -Wpedantic>
+)

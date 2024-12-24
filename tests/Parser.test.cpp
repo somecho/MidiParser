@@ -2,8 +2,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "MidiParser/MidiFile.hpp"
-#include "MidiParser/Parser.hpp"
+#include "MidiFile.hpp"
+#include "Parser.hpp"
 
 class Parser : public testing::TestWithParam<std::string> {
  public:

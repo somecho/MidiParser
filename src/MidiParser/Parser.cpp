@@ -91,11 +91,16 @@ std::vector<TrackEvent> Parser::parseTrackData(size_t trackIndex) {
         trackEvents.emplace_back(readSysExEvent(it, deltaTime));
         break;
       default:  // Midi Event
-        if (readMidiEvent(it, deltaTime)) {
+        auto e = readMidiEvent(it, deltaTime);
+        if (e) {
           runningStatus = identifier;
+          trackEvents.emplace_back(e.value());
           break;
         }
-        if (readMidiEvent(it, deltaTime, runningStatus)) {
+
+        e = readMidiEvent(it, deltaTime, runningStatus);
+        if (e) {
+          trackEvents.emplace_back(e.value());
           break;
         }
         throw std::runtime_error(
@@ -148,17 +153,20 @@ SysExEvent Parser::readSysExEvent(std::vector<byte>::iterator& it,
 std::optional<MIDIEvent> Parser::readMidiEvent(std::vector<byte>::iterator& it,
                                                uint32_t deltaTime) const {
   if (StatusOnlyMIDI.contains(*it)) {
+    auto e = MIDIEvent{.deltaTime = deltaTime, .status = *it};
     std::advance(it, 1);
-    return MIDIEvent{.deltaTime = deltaTime, .status = *it};
+    return e;
   }
   if (SingleByteMIDI.contains(*it & 0b11110000)) {
+    auto e = MIDIEvent{.deltaTime = deltaTime, .status = *it, .data = {*++it}};
     std::advance(it, 1);
-    return MIDIEvent{.deltaTime = deltaTime, .status = *it, .data = {*++it}};
+    return e;
   }
   if (DoubleByteMIDI.contains(*it & 0b11110000)) {
-    std::advance(it, 1);
-    return MIDIEvent{
+    auto e = MIDIEvent{
         .deltaTime = deltaTime, .status = *it, .data = {*++it, *++it}};
+    std::advance(it, 1);
+    return e;
   }
   return std::nullopt;
 }  // Parser::readMidiEvent
@@ -167,14 +175,16 @@ std::optional<MIDIEvent> Parser::readMidiEvent(std::vector<byte>::iterator& it,
                                                uint32_t deltaTime,
                                                uint8_t runningStatus) const {
   if (SingleByteMIDI.contains(runningStatus & 0b11110000)) {
-    std::advance(it, 1);
-    return MIDIEvent{
+    auto e = MIDIEvent{
         .deltaTime = deltaTime, .status = runningStatus, .data = {*it}};
+    std::advance(it, 1);
+    return e;
   }
   if (DoubleByteMIDI.contains(runningStatus & 0b11110000)) {
-    std::advance(it, 1);
-    return MIDIEvent{
+    auto e = MIDIEvent{
         .deltaTime = deltaTime, .status = runningStatus, .data = {*it, *++it}};
+    std::advance(it, 1);
+    return e;
   }
   return std::nullopt;
 }  // Parser::readMidiEvent
