@@ -57,3 +57,11 @@ endif(MSVC)
 
 add_subdirectory(tests)
 add_subdirectory(tools)
+
+add_executable(example_noteon 
+  ${CMAKE_CURRENT_SOURCE_DIR}/examples/MidiParser_Example_NoteOnEvents.cpp)
+target_link_libraries(example_noteon PRIVATE MidiParser)
+  target_compile_options(example_noteon PRIVATE
+    $<$<CONFIG:Debug>:-g -O0 -Wall -Wpedantic>
+    $<$<CONFIG:Release>:-O3 -DNDEBUG -s -Wall -Wpedantic>
+)
