@@ -6,14 +6,17 @@ add_library(MidiParser)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
+set(MIDI_PARSER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/MidiParser)
+set(MIDI_PARSER_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
+
 set(MIDI_PARSER_SOURCES
-  ${CMAKE_SOURCE_DIR}/src/MidiParser/Parser.cpp
+  ${MIDI_PARSER_DIR}/Parser.cpp
 )
 
 set(MIDI_PARSER_HEADERS
-  ${CMAKE_SOURCE_DIR}/src/MidiParser/Parser.hpp
-  ${CMAKE_SOURCE_DIR}/src/MidiParser/enums.hpp
-  ${CMAKE_SOURCE_DIR}/src/MidiParser/events.hpp
+  ${MIDI_PARSER_DIR}/Parser.hpp
+  ${MIDI_PARSER_DIR}/enums.hpp
+  ${MIDI_PARSER_DIR}/events.hpp
 )
 
 target_sources(MidiParser
@@ -21,7 +24,7 @@ target_sources(MidiParser
     ${MIDI_PARSER_SOURCES}
   PUBLIC
     FILE_SET HEADERS
-    BASE_DIRS ${CMAKE_SOURCE_DIR}/src
+    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src
     FILES ${MIDI_PARSER_HEADERS}
 )
 

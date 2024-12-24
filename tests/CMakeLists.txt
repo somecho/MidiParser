@@ -9,8 +9,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 add_executable(MidiParserTest
-  ${CMAKE_SOURCE_DIR}/tests/Parser.test.cpp
-  ${CMAKE_SOURCE_DIR}/tests/vlqto32.test.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Parser.test.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/vlqto32.test.cpp
 )
 
 target_compile_features(MidiParserTest PUBLIC cxx_std_23)
@@ -22,12 +22,12 @@ target_sources(MidiParserTest
 
 target_include_directories(MidiParserTest
   PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/
+  ${MIDI_PARSER_DIR}
 )
 
 target_compile_definitions(MidiParserTest
   PRIVATE
-    EXAMPLES_DIR="${CMAKE_SOURCE_DIR}/data/midi_examples"
+  EXAMPLES_DIR="${MIDI_PARSER_DATA_DIR}/midi_examples"
 )
 
 if(UNIX)

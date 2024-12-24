@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <format>
 
-#include "MidiParser/Parser.hpp"
+#include "Parser.hpp"
 #include "gtest/gtest.h"
 
 using Input = std::stack<uint8_t>;
