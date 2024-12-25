@@ -1,8 +1,7 @@
 #include <gtest/gtest.h>
 #include <format>
 
-#include "Parser.hpp"
-#include "gtest/gtest.h"
+#include "read.hpp"
 
 using Input = std::stack<uint8_t>;
 using Expected = uint32_t;
@@ -17,7 +16,7 @@ TEST_P(vlqto32, ConcatenatesBytesCorrectly) {
   auto p = GetParam();
   auto i = p.first;
   auto e = p.second;
-  EXPECT_EQ(MidiParser::Parser::vlqto32(i), e);
+  EXPECT_EQ(MidiParser::vlqto32(i), e);
 }
 
 const inline TestData data[] = {
