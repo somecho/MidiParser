@@ -1,10 +1,9 @@
-#include <netinet/in.h>
 #include <format>
 #include <iostream>
 #include <stdexcept>
 
 #include "Parser.hpp"
-#include "enums.hpp"
+#include "read.hpp"
 
 namespace MidiParser {
 
@@ -26,18 +25,7 @@ MidiFile Parser::parse(const std::string& path) {
                   .numTracks = m_numTracks,
                   .tickDivision = m_tickDivision,
                   .tracks = std::move(m_midiTracks)};
-}  // Parser::parse
-
-uint32_t Parser::vlqto32(std::stack<byte>& s) {
-  uint32_t out = 0;
-  size_t size = s.size();
-  for (size_t i = 0; i < size; ++i) {
-    byte in = s.top();
-    out |= (in & 0b01111111) << (7 * i);
-    s.pop();
-  }
-  return out;
-}  // Parser::vlqto32
+}
 
 void Parser::readHeaderData() {
   m_file.read(reinterpret_cast<char*>(m_headerData.data()),
@@ -47,7 +35,7 @@ void Parser::readHeaderData() {
   m_tickDivision = 0 | (m_headerData[12] << 8) | m_headerData[13];
   m_trackData.resize(m_numTracks);
   m_midiTracks.resize(m_numTracks);
-}  // Parser::readHeaderData
+}
 
 void Parser::readTrackData() {
   for (size_t i = 0; i < m_trackData.size(); ++i) {
@@ -60,13 +48,13 @@ void Parser::readTrackData() {
     m_midiTracks.at(i).length = trackDataLength;
     m_file.read(reinterpret_cast<char*>(track.data()), track.size());
   }
-}  // Parser::readTrackData
+}
 
 void Parser::parseAllTrackData() {
   for (size_t i = 0; i < m_trackData.size(); ++i) {
     m_threadPool.emplace_back(std::thread(&Parser::parseTrackData, this, i));
   }
-}  // Parser::parseTrackData
+}
 
 std::vector<TrackEvent> Parser::parseTrackData(size_t trackIndex) {
   auto& data = m_trackData.at(trackIndex);
@@ -80,7 +68,7 @@ std::vector<TrackEvent> Parser::parseTrackData(size_t trackIndex) {
     switch (identifier) {
       case 0xFF: {  // Meta Event
         auto e = readMetaEvent(it, deltaTime);
-        if (std::get<MetaEvent>(e).status == 0x2F) {
+        if (e.status == 0x2F) {
           endOfTrackFound = true;
         }
         trackEvents.emplace_back(e);
@@ -97,7 +85,6 @@ std::vector<TrackEvent> Parser::parseTrackData(size_t trackIndex) {
           trackEvents.emplace_back(e.value());
           break;
         }
-
         e = readMidiEvent(it, deltaTime, runningStatus);
         if (e) {
           trackEvents.emplace_back(e.value());
@@ -113,80 +100,6 @@ std::vector<TrackEvent> Parser::parseTrackData(size_t trackIndex) {
         "iterator.");
   }
   return trackEvents;
-}  // Parser::parseTrackData
-
-uint32_t Parser::readvlq(std::vector<byte>::iterator& it) const {
-  std::stack<byte> s;
-  uint8_t currByte = *it;
-  s.push(currByte);
-  while ((currByte & 0b10000000) != 0x0) {
-    currByte = *++it;
-    s.push(currByte);
-  }
-  return vlqto32(s);
-}  // Parser::readDeltaTime
-
-TrackEvent Parser::readMetaEvent(std::vector<byte>::iterator& it,
-                                 uint32_t deltaTime) const {
-  uint8_t metaType = *++it;
-  uint32_t length = readvlq(++it);
-  std::vector<byte> data;
-  for (uint32_t i = 0; i < length; i++) {
-    data.emplace_back(*++it);
-  }
-  std::advance(it, 1);
-  return MetaEvent{.deltaTime = deltaTime, .status = metaType, .data = data};
-}  // Parser::readMetaEvent
-
-SysExEvent Parser::readSysExEvent(std::vector<byte>::iterator& it,
-                                  uint32_t deltaTime) const {
-  std::vector<uint8_t> data;
-  uint8_t next = *++it;
-  while (next != 0xF7) {
-    data.emplace_back(next);
-    next = *++it;
-  }
-  std::advance(it, 1);
-  return SysExEvent{.deltaTime = deltaTime, .data = data};
-}  // Parser::readSysexEvent
-
-std::optional<MIDIEvent> Parser::readMidiEvent(std::vector<byte>::iterator& it,
-                                               uint32_t deltaTime) const {
-  if (StatusOnlyMIDI.contains(*it)) {
-    auto e = MIDIEvent{.deltaTime = deltaTime, .status = *it};
-    std::advance(it, 1);
-    return e;
-  }
-  if (SingleByteMIDI.contains(*it & 0b11110000)) {
-    auto e = MIDIEvent{.deltaTime = deltaTime, .status = *it, .data = {*++it}};
-    std::advance(it, 1);
-    return e;
-  }
-  if (DoubleByteMIDI.contains(*it & 0b11110000)) {
-    auto e = MIDIEvent{
-        .deltaTime = deltaTime, .status = *it, .data = {*++it, *++it}};
-    std::advance(it, 1);
-    return e;
-  }
-  return std::nullopt;
-}  // Parser::readMidiEvent
-
-std::optional<MIDIEvent> Parser::readMidiEvent(std::vector<byte>::iterator& it,
-                                               uint32_t deltaTime,
-                                               uint8_t runningStatus) const {
-  if (SingleByteMIDI.contains(runningStatus & 0b11110000)) {
-    auto e = MIDIEvent{
-        .deltaTime = deltaTime, .status = runningStatus, .data = {*it}};
-    std::advance(it, 1);
-    return e;
-  }
-  if (DoubleByteMIDI.contains(runningStatus & 0b11110000)) {
-    auto e = MIDIEvent{
-        .deltaTime = deltaTime, .status = runningStatus, .data = {*it, *++it}};
-    std::advance(it, 1);
-    return e;
-  }
-  return std::nullopt;
-}  // Parser::readMidiEvent
+}
 
 }  // namespace MidiParser
