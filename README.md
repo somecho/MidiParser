@@ -38,7 +38,7 @@ int main() {
 }
 ```
 
-You can try it with the [example midi files](./data/midi_examples). 
+You can try it with the [example midi files](./data/midi_examples). For more information about how to use this library, see the [simple examples](./examples) provided.
 
 ---
 
