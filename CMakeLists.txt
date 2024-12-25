@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(midiparser VERSION 0.2.2 LANGUAGES CXX)
+project(midiparser VERSION 0.2.3 LANGUAGES CXX)
 
 add_library(MidiParser)
 
