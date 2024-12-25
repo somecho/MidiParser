@@ -12,6 +12,7 @@ add_executable(MidiParserTest
   ${CMAKE_CURRENT_SOURCE_DIR}/Parser.test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/vlqto32.test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/events.test.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/read.test.cpp
 )
 
 target_compile_features(MidiParserTest PUBLIC cxx_std_23)

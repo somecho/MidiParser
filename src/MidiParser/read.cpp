@@ -56,12 +56,14 @@ std::optional<MIDIEvent> readMidiEvent(std::vector<uint8_t>::iterator& it,
     std::advance(it, 1);
     return e;
   }
-  if (SingleByteMIDI.contains(*it & 0b11110000)) {
+  if (SingleByteMIDI.contains(*it & 0b11110000) ||
+      SingleByteMIDI.contains(*it)) {
     auto e = MIDIEvent{.deltaTime = deltaTime, .status = *it, .data = {*++it}};
     std::advance(it, 1);
     return e;
   }
-  if (DoubleByteMIDI.contains(*it & 0b11110000)) {
+  if (DoubleByteMIDI.contains(*it & 0b11110000) ||
+      DoubleByteMIDI.contains(*it)) {
     auto e = MIDIEvent{
         .deltaTime = deltaTime, .status = *it, .data = {*++it, *++it}};
     std::advance(it, 1);
@@ -73,13 +75,15 @@ std::optional<MIDIEvent> readMidiEvent(std::vector<uint8_t>::iterator& it,
 std::optional<MIDIEvent> readMidiEvent(std::vector<uint8_t>::iterator& it,
                                        uint32_t deltaTime,
                                        uint8_t runningStatus) {
-  if (SingleByteMIDI.contains(runningStatus & 0b11110000)) {
+  if (SingleByteMIDI.contains(runningStatus & 0b11110000) ||
+      SingleByteMIDI.contains(runningStatus)) {
     auto e = MIDIEvent{
         .deltaTime = deltaTime, .status = runningStatus, .data = {*it}};
     std::advance(it, 1);
     return e;
   }
-  if (DoubleByteMIDI.contains(runningStatus & 0b11110000)) {
+  if (DoubleByteMIDI.contains(runningStatus & 0b11110000) ||
+      DoubleByteMIDI.contains(runningStatus)) {
     auto e = MIDIEvent{
         .deltaTime = deltaTime, .status = runningStatus, .data = {*it, *++it}};
     std::advance(it, 1);
