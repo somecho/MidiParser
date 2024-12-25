@@ -14,10 +14,23 @@ namespace MidiParser {
 
 using byte = uint8_t;
 
+/**
+ * The parser provided by MidiParser.
+ *
+ * Example usage:
+ *
+ * `MidiParser::Parser parser;`
+ * `MidiParser::MidiFile f = parser.parse("path/to/file.mid")`
+ * 
+ */
 class Parser {
  public:
   Parser() = default;
 
+  /**
+   * Parses the MIDI file located at `path`. Throws `std::runtime_error` if
+   * the MIDI file is invalid or does not exist.
+   */
   MidiFile parse(const std::string& path);
 
  private:
