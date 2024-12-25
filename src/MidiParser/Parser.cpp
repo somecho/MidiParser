@@ -1,10 +1,8 @@
-#include <netinet/in.h>
 #include <format>
 #include <iostream>
 #include <stdexcept>
 
 #include "Parser.hpp"
-#include "enums.hpp"
 #include "read.hpp"
 
 namespace MidiParser {
@@ -27,8 +25,8 @@ MidiFile Parser::parse(const std::string& path) {
                   .numTracks = m_numTracks,
                   .tickDivision = m_tickDivision,
                   .tracks = std::move(m_midiTracks)};
-}  // Parser::parse
-//
+}
+
 void Parser::readHeaderData() {
   m_file.read(reinterpret_cast<char*>(m_headerData.data()),
               m_headerData.size());
@@ -37,7 +35,7 @@ void Parser::readHeaderData() {
   m_tickDivision = 0 | (m_headerData[12] << 8) | m_headerData[13];
   m_trackData.resize(m_numTracks);
   m_midiTracks.resize(m_numTracks);
-}  // Parser::readHeaderData
+}
 
 void Parser::readTrackData() {
   for (size_t i = 0; i < m_trackData.size(); ++i) {
@@ -50,13 +48,13 @@ void Parser::readTrackData() {
     m_midiTracks.at(i).length = trackDataLength;
     m_file.read(reinterpret_cast<char*>(track.data()), track.size());
   }
-}  // Parser::readTrackData
+}
 
 void Parser::parseAllTrackData() {
   for (size_t i = 0; i < m_trackData.size(); ++i) {
     m_threadPool.emplace_back(std::thread(&Parser::parseTrackData, this, i));
   }
-}  // Parser::parseTrackData
+}
 
 std::vector<TrackEvent> Parser::parseTrackData(size_t trackIndex) {
   auto& data = m_trackData.at(trackIndex);
@@ -102,6 +100,6 @@ std::vector<TrackEvent> Parser::parseTrackData(size_t trackIndex) {
         "iterator.");
   }
   return trackEvents;
-}  // Parser::parseTrackData
+}
 
 }  // namespace MidiParser

@@ -31,24 +31,6 @@ target_compile_definitions(MidiParserTest
   EXAMPLES_DIR="${MIDI_PARSER_DATA_DIR}/midi_examples"
 )
 
-if(UNIX)
-  target_compile_options(MidiParserTest PRIVATE
-    $<$<CONFIG:Debug>:-g -O0 -Wall -Wpedantic>
-    $<$<CONFIG:Release>:-O3 -DNDEBUG -s -Wall -Wpedantic>
-)
-endif(UNIX)
-
-if(MSVC)
-  target_compile_options(MidiParserTest PRIVATE
-    $<$<CONFIG:Debug>:/Zi /Od /Wall /W3 /RTC1>
-    $<$<CONFIG:Release>: /O2 /DNDEBUG /W3 /WX /GS- /RTC1>
-)
-endif(MSVC)
-
-if(WIN32)
-  target_link_libraries(MidiParserTest PRIVATE ws2_32)
-endif(WIN32)
-
 target_link_libraries(MidiParserTest PRIVATE gtest gtest_main)
 
 include(GoogleTest)
