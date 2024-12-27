@@ -63,7 +63,7 @@ std::vector<TrackEvent> Parser::parseTrackData(size_t trackIndex) {
   bool endOfTrackFound = false;
   uint8_t runningStatus = 0;
   while (!endOfTrackFound) {
-    uint8_t deltaTime = readvlq(it);
+    uint32_t deltaTime = readvlq(it);
     uint8_t identifier = *++it;
     switch (identifier) {
       case 0xFF: {  // Meta Event

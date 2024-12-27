@@ -165,3 +165,16 @@ INSTANTIATE_TEST_SUITE_P(
     name);
 
 }  // namespace ReadMidiEventTests
+
+namespace ReadDeltaTimeTest {
+
+using bytes = std::vector<uint8_t>;
+
+TEST(Read, DeltaTime) {
+  bytes b = {0x83, 0x5F};
+  auto it = b.begin();
+  uint32_t deltaTime = MidiParser::readvlq(it);
+  ASSERT_EQ(deltaTime, 479);
+}
+
+}  // namespace ReadDeltaTimeTest

@@ -42,7 +42,7 @@ target_include_directories(MidiParser
 target_compile_features(MidiParser PUBLIC cxx_std_23)
 
 if(UNIX)
-  add_compile_options("$<$<CONFIG:Debug>:-g;-Wall;-Wpedantic>")
+  add_compile_options("$<$<CONFIG:Debug>:-g;-Wall;-Wpedantic;-Wconversion>")
   add_compile_options("$<$<CONFIG:Release>:-O3;-DNDEBUG;-s;-Wall;-Wpedantic>")
 elseif(MSVC)
   add_compile_options("$<$<CONFIG:Debug>:/Zi;/Od;/Wall;/W3;/RTC1>")
@@ -61,4 +61,8 @@ if(BUILD_EXAMPLES)
   add_executable(example_noteon
   ${CMAKE_CURRENT_SOURCE_DIR}/examples/MidiParser_Example_NoteOnEvents.cpp)
   target_link_libraries(example_noteon PRIVATE MidiParser)
+
+  add_executable(example_noteoff
+  ${CMAKE_CURRENT_SOURCE_DIR}/examples/MidiParser_Example_NoteOffEvents.cpp)
+  target_link_libraries(example_noteoff PRIVATE MidiParser)
 endif(BUILD_EXAMPLES)
