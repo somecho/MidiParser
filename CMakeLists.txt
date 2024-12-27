@@ -4,6 +4,10 @@ project(midiparser VERSION 0.2.3 LANGUAGES CXX)
 
 add_library(MidiParser)
 
+option(BUILD_TESTS "Build tests" OFF)
+option(BUILD_TOOLS "Build tools" OFF)
+option(BUILD_EXAMPLES "Build examples" OFF)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
 set(MIDI_PARSER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/MidiParser)
@@ -45,9 +49,16 @@ elseif(MSVC)
   add_compile_options("$<$<CONFIG:Release>:/O2;/DNDEBUG;/W3;/WX;/GS-;/RTC1>")
 endif()
 
-add_subdirectory(tests)
-add_subdirectory(tools)
+if(BUILD_TESTS)
+  add_subdirectory(tests)
+endif(BUILD_TESTS)
 
-add_executable(example_noteon
+if(BUILD_TOOLS)
+  add_subdirectory(tools)
+endif(BUILD_TOOLS)
+
+if(BUILD_EXAMPLES)
+  add_executable(example_noteon
   ${CMAKE_CURRENT_SOURCE_DIR}/examples/MidiParser_Example_NoteOnEvents.cpp)
-target_link_libraries(example_noteon PRIVATE MidiParser)
+  target_link_libraries(example_noteon PRIVATE MidiParser)
+endif(BUILD_EXAMPLES)
