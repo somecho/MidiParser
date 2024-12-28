@@ -9,6 +9,9 @@ namespace MidiParser {
 
 MidiFile Parser::parse(const std::string& path) {
   m_file = std::ifstream(path, std::ios::binary);
+  if(!m_file){
+    throw std::ios_base::failure("Unable to open file.");
+  }
   readHeaderData();
   readTrackData();
   m_file.ignore(1);

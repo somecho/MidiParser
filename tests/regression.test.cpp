@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include <ranges>
-#include <tuple>
 
 #include "Parser.hpp"
 
@@ -26,4 +25,9 @@ TEST(RegressionTest, DeltaTimeIsNotTruncated) {
   for (auto pair : std::views::zip(deltaTimes, expectedDeltaTimes)) {
     EXPECT_EQ(pair.first, pair.second);
   }
+}
+
+TEST(RegressionTest, ParsingNonExistentFileThrows) {
+  MidiParser::Parser p;
+  EXPECT_THROW(p.parse("does not exist"), std::ios_base::failure);
 }
